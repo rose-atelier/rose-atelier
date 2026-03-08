@@ -1567,50 +1567,87 @@ function renderAdminOrders() {
   }
 
   state.app.orders.forEach(order => {
+    const customerNote = order.bouquet.note || "";
+    const hasLongCustomerNote = customerNote.length > 120;
+
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td data-label="ID">${order.id}</td>
       <td data-label="ชื่อ">${order.customer.name}</td>
       <td data-label="เบอร์">${order.customer.phone}</td>
       <td data-label="จำนวน">${order.bouquet.count}</td>
+
       <td data-label="ประเภท">
         <div class="order-cell-list">
-          ${order.bouquet.compositions.length
-            ? order.bouquet.compositions.map(item => `<div class="order-cell-list__item">${item.type || "-"}</div>`).join("")
-            : `<div class="order-cell-list__item">-</div>`
+          ${
+            order.bouquet.compositions.length
+              ? order.bouquet.compositions.map(item => `
+                  <div class="order-cell-list__item">${item.type || "-"}</div>
+                `).join("")
+              : `<div class="order-cell-list__item">-</div>`
           }
         </div>
       </td>
+
       <td data-label="สีดอก">
         <div class="order-cell-list">
-          ${order.bouquet.compositions.length
-            ? order.bouquet.compositions.map(item => `<div class="order-cell-list__item">${item.color || "-"} (${item.qty || 0})</div>`).join("")
-            : `<div class="order-cell-list__item">-</div>`
+          ${
+            order.bouquet.compositions.length
+              ? order.bouquet.compositions.map(item => `
+                  <div class="order-cell-list__item">${item.color || "-"} (${item.qty || 0})</div>
+                `).join("")
+              : `<div class="order-cell-list__item">-</div>`
           }
         </div>
       </td>
+
       <td data-label="สีช่อ">${order.bouquet.bouquetColor || "-"}</td>
       <td data-label="ยอด">${formatBaht(order.pricing.total)}</td>
+
       <td data-label="สถานะ">
         <select class="admin-status-select">
-          ${ORDER_STATUSES.map(status => `<option value="${status}" ${order.status === status ? "selected" : ""}>${status}</option>`).join("")}
+          ${ORDER_STATUSES.map(status => `
+            <option value="${status}" ${order.status === status ? "selected" : ""}>${status}</option>
+          `).join("")}
         </select>
       </td>
+
       <td data-label="เลขพัสดุ">
-        <input class="admin-tracking-input" type="text" value="${order.trackingNumber || ""}" placeholder="กรอกเลขแท็ค" ${order.status !== "จัดส่งแล้ว(ไปรษณี)" ? "disabled" : ""} />
+        <input
+          class="admin-tracking-input"
+          type="text"
+          value="${order.trackingNumber || ""}"
+          placeholder="กรอกเลขแท็ค"
+          ${order.status !== "จัดส่งแล้ว(ไปรษณี)" ? "disabled" : ""}
+        />
       </td>
+
       <td data-label="สลิป">
-        ${order.payment.slipImage ? `<button class="slip-thumb-btn" type="button">ดูสลิป</button>` : `<span>-</span>`}
+        ${
+          order.payment.slipImage
+            ? `<button class="slip-thumb-btn" type="button">ดูสลิป</button>`
+            : `<span>-</span>`
+        }
       </td>
+
       <td data-label="หมายเหตุลูกค้า">
-        <div class="admin-note-preview">${order.bouquet.note || "-"}</div>
+        <div class="admin-note-preview customer-note-preview">${customerNote || "-"}</div>
+        ${
+          hasLongCustomerNote
+            ? `
+              <button class="customer-note-toggle" type="button">ดูข้อความเต็ม</button>
+              <div class="customer-note-full hidden">${customerNote}</div>
+            `
+            : ""
+        }
       </td>
+
       <td data-label="หมายเหตุแอดมิน">
         <div class="admin-note-block">
-          <textarea class="admin-note-input" rows="3">${order.adminNote || ""}</textarea>
-          <p class="mini-note">หมายเหตุนี้จะส่งกลับลูกค้าเมื่อมีการแจ้งสถานะทาง LINE ถ้ามี lineId</p>
+          <textarea class="admin-note-input" rows="2">${order.adminNote || ""}</textarea>
         </div>
       </td>
+
       <td data-label="จัดการ">
         <div class="admin-action-stack">
           <button class="save-row-btn" type="button">บันทึก</button>
@@ -1625,11 +1662,21 @@ function renderAdminOrders() {
     const saveBtn = tr.querySelector(".save-row-btn");
     const deleteBtn = tr.querySelector(".delete-row-btn");
     const slipBtn = tr.querySelector(".slip-thumb-btn");
+    const customerNoteToggle = tr.querySelector(".customer-note-toggle");
+    const customerNoteFull = tr.querySelector(".customer-note-full");
 
     statusSelect.addEventListener("change", () => {
       trackingInput.disabled = statusSelect.value !== "จัดส่งแล้ว(ไปรษณี)";
       if (trackingInput.disabled) trackingInput.value = "";
     });
+
+    if (customerNoteToggle && customerNoteFull) {
+      customerNoteToggle.addEventListener("click", () => {
+        const isHidden = customerNoteFull.classList.contains("hidden");
+        customerNoteFull.classList.toggle("hidden", !isHidden);
+        customerNoteToggle.textContent = isHidden ? "ซ่อนข้อความเต็ม" : "ดูข้อความเต็ม";
+      });
+    }
 
     saveBtn.addEventListener("click", async () => {
       try {

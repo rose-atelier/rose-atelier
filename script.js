@@ -107,12 +107,12 @@ const BANNED_WORDS = [
 const CHART_COLORS = [
   "#d98f87",
   "#cfa36b",
-  "#c76868",
-  "#8e77b7",
-  "#67a7d9",
-  "#83b58a",
-  "#e3a5a5",
-  "#b5a3da"
+  "#7bb58d",
+  "#d8a3a3",
+  "#8b7bb5",
+  "#7ba8d9",
+  "#d9b07b",
+  "#91c4a0"
 ];
 
 const state = {
@@ -181,6 +181,12 @@ function loadCache() {
   }
 }
 
+function sanitizeStringArray(arr, fallback = []) {
+  if (!Array.isArray(arr)) return [...fallback];
+  const result = arr.map(item => String(item || "").trim()).filter(Boolean);
+  return result.length ? result : [...fallback];
+}
+
 function sanitizeNumberMap(map, fallback = {}) {
   const source = map && typeof map === "object" ? map : fallback;
   const result = {};
@@ -193,14 +199,7 @@ function sanitizeNumberMap(map, fallback = {}) {
     }
   });
 
-  if (!Object.keys(result).length) return { ...fallback };
-  return result;
-}
-
-function sanitizeStringArray(arr, fallback = []) {
-  if (!Array.isArray(arr)) return [...fallback];
-  const result = arr.map(item => String(item || "").trim()).filter(Boolean);
-  return result.length ? result : [...fallback];
+  return Object.keys(result).length ? result : { ...fallback };
 }
 
 function mergeAppData(data = {}) {
@@ -410,7 +409,9 @@ function getRosePrice(count) {
 
   if (roseMap[qty] !== undefined) return Number(roseMap[qty]);
 
-  const maxDefined = Math.max(...Object.keys(roseMap).map(Number));
+  const numericKeys = Object.keys(roseMap).map(Number).filter(Number.isFinite);
+  const maxDefined = Math.max(...numericKeys);
+
   if (qty > maxDefined) {
     const base = Number(roseMap[maxDefined] || 0);
     return base + (qty - maxDefined) * 20;
@@ -455,6 +456,7 @@ function getDefaultDraft() {
     bouquet: {
       count: 0,
       bouquetColor: "",
+      deliveryDate: "",
       compositions: [],
       extras: {
         fluffy: false,
@@ -479,11 +481,14 @@ function getSelectedTypesText() {
 
 function calculateDraftSummary() {
   const count = Number(state.orderDraft.bouquet.count || 0);
-  const validPriceRows = state.orderDraft.bouquet.compositions.filter(
+  const validRows = state.orderDraft.bouquet.compositions.filter(
     item => item.type && Number(item.qty) > 0
   );
 
-  const basePrice = validPriceRows.reduce((sum, item) => sum + getFlowerTypePrice(item.type, item.qty), 0);
+  const basePrice = validRows.reduce((sum, item) => {
+    return sum + getFlowerTypePrice(item.type, item.qty);
+  }, 0);
+
   const fluffyPrice = state.orderDraft.bouquet.extras.fluffy ? Number(state.app.settings.fluffyPrice || 0) : 0;
   const crownPrice = state.orderDraft.bouquet.extras.crown ? Number(state.app.settings.crownPrice || 0) : 0;
   const shippingInfo = getShippingInfo(count, state.orderDraft.bouquet.extras.pickup);
@@ -560,18 +565,28 @@ function showToast(message) {
   toast.textContent = message;
   toast.classList.add("show");
 
-  if (state.toastTimer) clearTimeout(state.toastTimer);
-  state.toastTimer = setTimeout(() => toast.classList.remove("show"), 2400);
+  if (state.toastTimer) {
+    clearTimeout(state.toastTimer);
+  }
+
+  state.toastTimer = setTimeout(() => {
+    toast.classList.remove("show");
+  }, 2400);
 }
 
 function setBusy(status) {
   state.loadingRequest = !!status;
   const submitBtn = qs("#submit-order-btn");
-  if (submitBtn) submitBtn.disabled = !!status;
+  if (submitBtn) {
+    submitBtn.disabled = !!status;
+  }
 }
 
 function normalizeOrder(serverOrder) {
-  const compositions = Array.isArray(serverOrder.compositions) ? serverOrder.compositions : [];
+  const compositions = Array.isArray(serverOrder.compositions)
+    ? serverOrder.compositions
+    : [];
+
   const extras = {
     fluffy: !!serverOrder.extras?.fluffy,
     crown: !!serverOrder.extras?.crown,
@@ -592,6 +607,7 @@ function normalizeOrder(serverOrder) {
     bouquet: {
       count: Number(serverOrder.quantity || 0),
       bouquetColor: serverOrder.bouquetColor || "",
+      deliveryDate: serverOrder.deliveryDate || "",
       note: serverOrder.comment || "",
       extras,
       compositions
@@ -687,7 +703,9 @@ function setPage(pageId) {
     section.classList.toggle("active", section.id === pageId);
   });
 
-  if (pageId === "page-home") renderGallery();
+  if (pageId === "page-home") {
+    renderGallery();
+  }
 
   if (pageId === "page-admin") {
     if (!isAdminLoggedIn()) {
@@ -724,8 +742,12 @@ function closeMobileNav() {
 function toggleMobileNav() {
   const nav = qs("#mobile-nav");
   if (!nav) return;
-  if (nav.classList.contains("hidden")) openMobileNav();
-  else closeMobileNav();
+
+  if (nav.classList.contains("hidden")) {
+    openMobileNav();
+  } else {
+    closeMobileNav();
+  }
 }
 
 function navigateToSection(target) {
@@ -808,10 +830,13 @@ function renderOrderForm() {
   qs("#extra-fluffy").checked = !!state.orderDraft.bouquet.extras.fluffy;
   qs("#extra-crown").checked = !!state.orderDraft.bouquet.extras.crown;
   qs("#extra-pickup").checked = !!state.orderDraft.bouquet.extras.pickup;
+  qs("#summary-delivery-date").value = state.orderDraft.bouquet.deliveryDate || "";
   qs("#selected-count-text").textContent = `${state.orderDraft.bouquet.count || 0} ดอก`;
   qs("#composition-progress-text").textContent = `${getCompositionTotal()} / ${state.orderDraft.bouquet.count || 0} ดอก`;
 
-  if (state.orderDraft.step !== 3) qs("#payment-section").classList.add("hidden");
+  if (state.orderDraft.step !== 3) {
+    qs("#payment-section").classList.add("hidden");
+  }
 }
 
 function renderQuickCounts() {
@@ -907,7 +932,7 @@ function renderCompositionRows() {
     const qtyEl = item.querySelector('input[data-field="qty"]');
     const removeEl = item.querySelector(".composition-row__remove");
 
-    typeEl.addEventListener("change", e => {
+    typeEl.addEventListener("change", (e) => {
       const selectedType = e.target.value;
       const validColors = getFlowerColorsByType(selectedType);
       state.orderDraft.bouquet.compositions[index].type = selectedType;
@@ -920,12 +945,12 @@ function renderCompositionRows() {
       renderBuilderSummary();
     });
 
-    colorEl.addEventListener("change", e => {
+    colorEl.addEventListener("change", (e) => {
       state.orderDraft.bouquet.compositions[index].color = e.target.value;
       renderBuilderSummary();
     });
 
-    qtyEl.addEventListener("input", e => {
+    qtyEl.addEventListener("input", (e) => {
       const totalAllowed = Number(state.orderDraft.bouquet.count || 0);
       const currentRows = state.orderDraft.bouquet.compositions;
       const otherRowsTotal = currentRows.reduce((sum, itemRow, idx) => {
@@ -1008,6 +1033,7 @@ function renderStep3Summary() {
       <div class="confirmation-row"><span>จำนวน</span><strong>${summary.count || 0} ดอก</strong></div>
       <div class="confirmation-row"><span>ประเภท</span><strong>${getSelectedTypesText()}</strong></div>
       <div class="confirmation-row"><span>สีช่อ</span><strong>${state.orderDraft.bouquet.bouquetColor || "-"}</strong></div>
+      <div class="confirmation-row"><span>วันที่รับของ / วันที่ต้องการใช้</span><strong>${state.orderDraft.bouquet.deliveryDate || "-"}</strong></div>
       <div class="confirmation-row"><span>รายละเอียดเพิ่มเติม</span><strong>${state.orderDraft.bouquet.note || "-"}</strong></div>
       ${compositions.map(item => `<div class="confirmation-row"><span>${item.type} / ${item.color}</span><strong>${item.qty} ดอก (${formatBaht(getFlowerTypePrice(item.type, item.qty))})</strong></div>`).join("")}
     </div>
@@ -1093,6 +1119,7 @@ function validateStep1() {
 function validateStep2() {
   const count = Number(state.orderDraft.bouquet.count || 0);
   const bouquetColor = state.orderDraft.bouquet.bouquetColor;
+  const deliveryDate = state.orderDraft.bouquet.deliveryDate || "";
   const compositionTotal = getCompositionTotal();
   const validRows = state.orderDraft.bouquet.compositions.filter(item => item.type && item.color && Number(item.qty) > 0);
 
@@ -1116,12 +1143,18 @@ function validateStep2() {
     return false;
   }
 
+  if (!deliveryDate) {
+    qs("#builder-error").textContent = "กรุณาเลือกวันที่รับของ / วันที่ต้องการใช้";
+    return false;
+  }
+
   qs("#builder-error").textContent = "";
   return true;
 }
 
 function buildOrderPayload() {
   const summary = calculateDraftSummary();
+
   const validCompositions = state.orderDraft.bouquet.compositions
     .filter(item => item.type && item.color && Number(item.qty) > 0)
     .map(item => ({
@@ -1136,12 +1169,15 @@ function buildOrderPayload() {
     customerName: sanitizeText(state.orderDraft.customer.name),
     phone: state.orderDraft.customer.phone,
     address: sanitizeText(state.orderDraft.customer.address),
+    deliveryDate: state.orderDraft.bouquet.deliveryDate || "",
     quantity: Number(state.orderDraft.bouquet.count || 0),
     bouquetColor: sanitizeText(state.orderDraft.bouquet.bouquetColor),
     comment: sanitizeText(state.orderDraft.bouquet.note || ""),
     flowerType: sanitizeText(getSelectedTypesText()),
     flowerColor: sanitizeText(
-      validCompositions.map(item => `${item.color}(${item.qty})`).join(", ")
+      validCompositions
+        .map(item => `${item.color}(${item.qty})`)
+        .join(", ")
     ),
     totalPrice: summary.total,
     basePrice: summary.basePrice,
@@ -1182,8 +1218,13 @@ async function submitOrder() {
     const order = state.app.orders.find(item => item.id === result.orderId);
     state.lastCreatedOrderId = result.orderId;
 
-    if (order) showSuccessPage(order);
-    else showSuccessPage({ id: result.orderId });
+    if (order) {
+      showSuccessPage(order);
+    } else {
+      showSuccessPage({
+        id: result.orderId
+      });
+    }
 
     renderAdminDashboard();
     showToast("ส่งคำสั่งซื้อเรียบร้อยแล้ว");
@@ -1207,7 +1248,10 @@ function renderGallery() {
   wrap.innerHTML = "";
 
   const galleryItems = [...(state.app.gallery || [])]
-    .filter(item => typeof item === "string" || String(item.isActive).toUpperCase() !== "FALSE")
+    .filter(item => {
+      if (typeof item === "string") return true;
+      return String(item.isActive).toUpperCase() !== "FALSE";
+    })
     .sort((a, b) => {
       const aOrder = typeof a === "string" ? 0 : Number(a.sortOrder || 0);
       const bOrder = typeof b === "string" ? 0 : Number(b.sortOrder || 0);
@@ -1230,6 +1274,7 @@ function renderGallery() {
       <img src="${src}" alt="${safeAlt}" loading="lazy" />
       ${title ? `<figcaption>${title}</figcaption>` : ""}
     `;
+
     wrap.appendChild(card);
   });
 }
@@ -1276,6 +1321,7 @@ function renderStatusResult(order) {
         <h4>รายละเอียดช่อ</h4>
         <div class="confirmation-row"><span>จำนวน</span><strong>${order.bouquet.count} ดอก</strong></div>
         <div class="confirmation-row"><span>สีช่อ</span><strong>${order.bouquet.bouquetColor}</strong></div>
+        <div class="confirmation-row"><span>วันที่รับของ / วันที่ต้องการใช้</span><strong>${order.bouquet.deliveryDate || "-"}</strong></div>
         <div class="confirmation-row"><span>หมายเหตุ</span><strong>${order.bouquet.note || "-"}</strong></div>
         ${compositions}
       </div>
@@ -1297,13 +1343,29 @@ function getSalesCostProfitSummary() {
   const totalSales = orders.reduce((sum, order) => sum + Number(order.pricing?.total || 0), 0);
   const totalCosts = costs.reduce((sum, item) => sum + Number(item.amount || 0), 0);
 
-  const dailySales = orders.filter(order => matchesToday(order.createdAt)).reduce((sum, order) => sum + Number(order.pricing?.total || 0), 0);
-  const monthlySales = orders.filter(order => matchesMonth(order.createdAt)).reduce((sum, order) => sum + Number(order.pricing?.total || 0), 0);
-  const yearlySales = orders.filter(order => matchesYear(order.createdAt)).reduce((sum, order) => sum + Number(order.pricing?.total || 0), 0);
+  const dailySales = orders
+    .filter(order => matchesToday(order.createdAt))
+    .reduce((sum, order) => sum + Number(order.pricing?.total || 0), 0);
 
-  const dailyCost = costs.filter(item => matchesToday(item.date)).reduce((sum, item) => sum + Number(item.amount || 0), 0);
-  const monthlyCost = costs.filter(item => matchesMonth(item.date)).reduce((sum, item) => sum + Number(item.amount || 0), 0);
-  const yearlyCost = costs.filter(item => matchesYear(item.date)).reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const monthlySales = orders
+    .filter(order => matchesMonth(order.createdAt))
+    .reduce((sum, order) => sum + Number(order.pricing?.total || 0), 0);
+
+  const yearlySales = orders
+    .filter(order => matchesYear(order.createdAt))
+    .reduce((sum, order) => sum + Number(order.pricing?.total || 0), 0);
+
+  const dailyCost = costs
+    .filter(item => matchesToday(item.date))
+    .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+
+  const monthlyCost = costs
+    .filter(item => matchesMonth(item.date))
+    .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+
+  const yearlyCost = costs
+    .filter(item => matchesYear(item.date))
+    .reduce((sum, item) => sum + Number(item.amount || 0), 0);
 
   return {
     totalSales,
@@ -1385,22 +1447,18 @@ function parseNumberMapTextarea(value, fallback = {}) {
 
 function renderAdminSettings() {
   const settings = state.app.settings;
-
   qs("#setting-bank-name").value = settings.payment.bankName;
   qs("#setting-account-name").value = settings.payment.accountName;
   qs("#setting-account-number").value = settings.payment.accountNumber;
   qs("#setting-fluffy-price").value = settings.fluffyPrice;
   qs("#setting-crown-price").value = settings.crownPrice;
   qs("#setting-bouquet-colors").value = settings.bouquetColors.join(", ");
-
   qs("#setting-rose-flower-types").value = settings.roseFlowerTypes.join(", ");
   qs("#setting-velvet-flower-types").value = settings.velvetFlowerTypes.join(", ");
   qs("#setting-rose-flower-colors").value = settings.roseFlowerColors.join(", ");
   qs("#setting-velvet-flower-colors").value = settings.velvetFlowerColors.join(", ");
-
   qs("#setting-rose-price-map").value = formatMapToLines(settings.rosePriceMap);
   qs("#setting-velvet-price-anchors").value = formatMapToLines(settings.velvetPriceAnchors);
-
   qs("#setting-shipping-1-10").value = settings.shipping.range1to10;
   qs("#setting-shipping-11-19").value = settings.shipping.range11to19;
   qs("#setting-shipping-20-30").value = settings.shipping.range20to30;
@@ -1420,7 +1478,9 @@ function renderAdminGallery() {
     return;
   }
 
-  const sortedGallery = [...state.app.gallery].sort((a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0));
+  const sortedGallery = [...state.app.gallery].sort((a, b) => {
+    return Number(a.sortOrder || 0) - Number(b.sortOrder || 0);
+  });
 
   sortedGallery.forEach((item, index) => {
     const src = item.imageUrl || "";
@@ -1465,16 +1525,16 @@ function renderAdminCosts() {
     return;
   }
 
-  state.app.costs.forEach(cost => {
+  state.app.costs.forEach((cost) => {
     const tr = document.createElement("tr");
     tr.className = "cost-edit-row";
 
     tr.innerHTML = `
-      <td data-label="ชื่อรายการ"><input type="text" value="${cost.name || ""}" class="cost-name-input" /></td>
-      <td data-label="จำนวนเงิน"><input type="number" value="${cost.amount || 0}" class="cost-amount-input" /></td>
-      <td data-label="วันที่ซื้อ"><input type="date" value="${cost.date || ""}" class="cost-date-input" /></td>
-      <td data-label="หมายเหตุ"><textarea rows="2" class="cost-note-input">${cost.note || ""}</textarea></td>
-      <td data-label="จัดการ">
+      <td><input type="text" value="${cost.name || ""}" class="cost-name-input" /></td>
+      <td><input type="number" value="${cost.amount || 0}" class="cost-amount-input" /></td>
+      <td><input type="date" value="${cost.date || ""}" class="cost-date-input" /></td>
+      <td><textarea rows="2" class="cost-note-input">${cost.note || ""}</textarea></td>
+      <td>
         <div class="inline-action-group">
           <button type="button" class="inline-btn inline-btn--save">บันทึก</button>
           <button type="button" class="inline-btn inline-btn--delete">ลบ</button>
@@ -1554,6 +1614,117 @@ async function addCostItem() {
   } catch (error) {
     alert(error.message || "เพิ่มต้นทุนไม่สำเร็จ");
   }
+}
+
+function renderDonutChart(containerSelector, legendSelector, title, items) {
+  const chartEl = qs(containerSelector);
+  const legendEl = qs(legendSelector);
+  if (!chartEl || !legendEl) return;
+
+  const total = items.reduce((sum, item) => sum + Number(item.value || 0), 0);
+
+  if (!total) {
+    chartEl.style.background = "conic-gradient(#f0e8e5 0deg 360deg)";
+    chartEl.innerHTML = `<div class="donut-chart__center"><strong>0</strong><span>${title}</span></div>`;
+    legendEl.innerHTML = `<div class="empty-state">ยังไม่มีข้อมูล</div>`;
+    return;
+  }
+
+  let current = 0;
+  const segments = items.map((item, index) => {
+    const value = Number(item.value || 0);
+    const angle = (value / total) * 360;
+    const start = current;
+    const end = current + angle;
+    current = end;
+    return `${item.color || CHART_COLORS[index % CHART_COLORS.length]} ${start}deg ${end}deg`;
+  });
+
+  chartEl.style.background = `conic-gradient(${segments.join(", ")})`;
+  chartEl.innerHTML = `<div class="donut-chart__center"><strong>${total}</strong><span>${title}</span></div>`;
+
+  legendEl.innerHTML = items.map((item, index) => `
+    <div class="chart-legend__item">
+      <span class="chart-legend__dot" style="background:${item.color || CHART_COLORS[index % CHART_COLORS.length]}"></span>
+      <span>${item.label}</span>
+      <strong>${Number(item.value || 0).toLocaleString("th-TH")}</strong>
+    </div>
+  `).join("");
+}
+
+function renderBarChart(containerSelector, items, formatter = v => String(v)) {
+  const container = qs(containerSelector);
+  if (!container) return;
+
+  const safeItems = items.filter(item => Number(item.value || 0) > 0).slice(0, 8);
+
+  if (!safeItems.length) {
+    container.innerHTML = `<div class="empty-state">ยังไม่มีข้อมูล</div>`;
+    return;
+  }
+
+  const maxValue = Math.max(...safeItems.map(item => Number(item.value || 0)), 1);
+
+  container.innerHTML = safeItems.map(item => {
+    const percent = Math.max(4, Math.round((Number(item.value || 0) / maxValue) * 100));
+    return `
+      <div class="bar-chart__item">
+        <div class="bar-chart__head">
+          <span class="bar-chart__label">${item.label}</span>
+          <span class="bar-chart__value">${formatter(item.value)}</span>
+        </div>
+        <div class="bar-chart__track">
+          <div class="bar-chart__fill" style="width:${percent}%"></div>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderAdminCharts() {
+  const orders = state.app.orders || [];
+  const report = getSalesCostProfitSummary();
+
+  const statusMap = ORDER_STATUSES.reduce((acc, status) => {
+    acc[status] = 0;
+    return acc;
+  }, {});
+
+  orders.forEach(order => {
+    statusMap[order.status] = (statusMap[order.status] || 0) + 1;
+  });
+
+  const statusItems = Object.entries(statusMap)
+    .map(([label, value], index) => ({
+      label,
+      value,
+      color: CHART_COLORS[index % CHART_COLORS.length]
+    }))
+    .filter(item => item.value > 0);
+
+  renderDonutChart("#status-donut-chart", "#status-chart-legend", "ออเดอร์", statusItems);
+
+  const flowerTypeCountMap = {};
+  orders.forEach(order => {
+    order.bouquet.compositions.forEach(item => {
+      const type = item.type || "-";
+      flowerTypeCountMap[type] = (flowerTypeCountMap[type] || 0) + Number(item.qty || 0);
+    });
+  });
+
+  const flowerTypeItems = Object.entries(flowerTypeCountMap)
+    .map(([label, value]) => ({ label, value }))
+    .sort((a, b) => b.value - a.value);
+
+  renderBarChart("#flower-type-bars", flowerTypeItems, value => `${Number(value).toLocaleString("th-TH")} ดอก`);
+
+  const salesItems = [
+    { label: "วันนี้", value: report.dailySales },
+    { label: "เดือนนี้", value: report.monthlySales },
+    { label: "ปีนี้", value: report.yearlySales }
+  ];
+
+  renderBarChart("#sales-compare-bars", salesItems, value => formatBaht(value));
 }
 
 function renderAdminOrders() {
@@ -1717,117 +1888,6 @@ function renderAdminOrders() {
   });
 }
 
-function renderDonutChart(containerSelector, legendSelector, title, items) {
-  const chartEl = qs(containerSelector);
-  const legendEl = qs(legendSelector);
-  if (!chartEl || !legendEl) return;
-
-  const total = items.reduce((sum, item) => sum + Number(item.value || 0), 0);
-
-  if (!total) {
-    chartEl.style.background = "conic-gradient(#f0e8e5 0deg 360deg)";
-    chartEl.innerHTML = `<div class="donut-chart__center"><strong>0</strong><span>${title}</span></div>`;
-    legendEl.innerHTML = `<div class="empty-state">ยังไม่มีข้อมูล</div>`;
-    return;
-  }
-
-  let current = 0;
-  const segments = items.map((item, index) => {
-    const value = Number(item.value || 0);
-    const angle = (value / total) * 360;
-    const start = current;
-    const end = current + angle;
-    current = end;
-    return `${item.color || CHART_COLORS[index % CHART_COLORS.length]} ${start}deg ${end}deg`;
-  });
-
-  chartEl.style.background = `conic-gradient(${segments.join(", ")})`;
-  chartEl.innerHTML = `<div class="donut-chart__center"><strong>${total}</strong><span>${title}</span></div>`;
-
-  legendEl.innerHTML = items.map((item, index) => `
-    <div class="chart-legend__item">
-      <span class="chart-legend__dot" style="background:${item.color || CHART_COLORS[index % CHART_COLORS.length]}"></span>
-      <span>${item.label}</span>
-      <strong>${Number(item.value || 0).toLocaleString("th-TH")}</strong>
-    </div>
-  `).join("");
-}
-
-function renderBarChart(containerSelector, items, formatter = v => String(v)) {
-  const container = qs(containerSelector);
-  if (!container) return;
-
-  const safeItems = items.filter(item => Number(item.value || 0) > 0).slice(0, 8);
-
-  if (!safeItems.length) {
-    container.innerHTML = `<div class="empty-state">ยังไม่มีข้อมูล</div>`;
-    return;
-  }
-
-  const maxValue = Math.max(...safeItems.map(item => Number(item.value || 0)), 1);
-
-  container.innerHTML = safeItems.map(item => {
-    const percent = Math.max(4, Math.round((Number(item.value || 0) / maxValue) * 100));
-    return `
-      <div class="bar-chart__item">
-        <div class="bar-chart__head">
-          <span class="bar-chart__label">${item.label}</span>
-          <span class="bar-chart__value">${formatter(item.value)}</span>
-        </div>
-        <div class="bar-chart__track">
-          <div class="bar-chart__fill" style="width:${percent}%"></div>
-        </div>
-      </div>
-    `;
-  }).join("");
-}
-
-function renderAdminCharts() {
-  const orders = state.app.orders || [];
-  const report = getSalesCostProfitSummary();
-
-  const statusMap = ORDER_STATUSES.reduce((acc, status) => {
-    acc[status] = 0;
-    return acc;
-  }, {});
-
-  orders.forEach(order => {
-    statusMap[order.status] = (statusMap[order.status] || 0) + 1;
-  });
-
-  const statusItems = Object.entries(statusMap)
-    .map(([label, value], index) => ({
-      label,
-      value,
-      color: CHART_COLORS[index % CHART_COLORS.length]
-    }))
-    .filter(item => item.value > 0);
-
-  renderDonutChart("#status-donut-chart", "#status-chart-legend", "ออเดอร์", statusItems);
-
-  const flowerTypeCountMap = {};
-  orders.forEach(order => {
-    order.bouquet.compositions.forEach(item => {
-      const type = item.type || "-";
-      flowerTypeCountMap[type] = (flowerTypeCountMap[type] || 0) + Number(item.qty || 0);
-    });
-  });
-
-  const flowerTypeItems = Object.entries(flowerTypeCountMap)
-    .map(([label, value]) => ({ label, value }))
-    .sort((a, b) => b.value - a.value);
-
-  renderBarChart("#flower-type-bars", flowerTypeItems, value => `${Number(value).toLocaleString("th-TH")} ดอก`);
-
-  const salesItems = [
-    { label: "วันนี้", value: report.dailySales },
-    { label: "เดือนนี้", value: report.monthlySales },
-    { label: "ปีนี้", value: report.yearlySales }
-  ];
-
-  renderBarChart("#sales-compare-bars", salesItems, value => formatBaht(value));
-}
-
 function renderAdminDashboard() {
   if (!isAdminLoggedIn()) return;
   renderAdminKpis();
@@ -1925,8 +1985,13 @@ function readFileAsDataURL(file) {
 }
 
 async function validateImageFileToDataUrl(file) {
-  if (!file) throw new Error("ไม่พบไฟล์รูป");
-  if (!file.type.startsWith("image/")) throw new Error("รองรับเฉพาะไฟล์รูปภาพ");
+  if (!file) {
+    throw new Error("ไม่พบไฟล์รูป");
+  }
+
+  if (!file.type.startsWith("image/")) {
+    throw new Error("รองรับเฉพาะไฟล์รูปภาพ");
+  }
 
   const dataUrl = await readFileAsDataURL(file);
 
@@ -1947,7 +2012,7 @@ function setupSlipDropzone() {
   if (!dropzone || !input) return;
 
   ["dragenter", "dragover"].forEach(eventName => {
-    dropzone.addEventListener(eventName, e => {
+    dropzone.addEventListener(eventName, (e) => {
       e.preventDefault();
       e.stopPropagation();
       dropzone.classList.add("is-dragover");
@@ -1955,14 +2020,14 @@ function setupSlipDropzone() {
   });
 
   ["dragleave", "drop"].forEach(eventName => {
-    dropzone.addEventListener(eventName, e => {
+    dropzone.addEventListener(eventName, (e) => {
       e.preventDefault();
       e.stopPropagation();
       dropzone.classList.remove("is-dragover");
     });
   });
 
-  dropzone.addEventListener("drop", async e => {
+  dropzone.addEventListener("drop", async (e) => {
     const file = e.dataTransfer?.files?.[0];
     if (!file) return;
 
@@ -1985,17 +2050,19 @@ function setupSlipDropzone() {
 
 function bindResponsiveHelpers() {
   window.addEventListener("resize", () => {
-    if (window.innerWidth > 860) closeMobileNav();
+    if (window.innerWidth > 860) {
+      closeMobileNav();
+    }
   });
 
-  document.addEventListener("keydown", e => {
+  document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
       closeMobileNav();
       closeSlipModal();
     }
   });
 
-  document.addEventListener("click", e => {
+  document.addEventListener("click", (e) => {
     const header = qs(".site-header");
     const nav = qs("#mobile-nav");
     const toggle = qs("#menu-toggle");
@@ -2004,7 +2071,9 @@ function bindResponsiveHelpers() {
     if (nav.classList.contains("hidden")) return;
 
     const isInsideHeader = header.contains(e.target);
-    if (!isInsideHeader) closeMobileNav();
+    if (!isInsideHeader) {
+      closeMobileNav();
+    }
   });
 }
 
@@ -2025,7 +2094,7 @@ function bindGlobalEvents() {
   qs("#back-home-from-status").addEventListener("click", () => setPage("page-home"));
   qs("#back-home-from-admin-login").addEventListener("click", () => setPage("page-home"));
 
-  qs("#customer-form").addEventListener("submit", e => {
+  qs("#customer-form").addEventListener("submit", (e) => {
     e.preventDefault();
     if (!validateStep1()) return;
     state.orderDraft.step = 2;
@@ -2042,6 +2111,7 @@ function bindGlobalEvents() {
     state.orderDraft.bouquet.extras.fluffy = qs("#extra-fluffy").checked;
     state.orderDraft.bouquet.extras.crown = qs("#extra-crown").checked;
     state.orderDraft.bouquet.extras.pickup = qs("#extra-pickup").checked;
+    state.orderDraft.bouquet.deliveryDate = qs("#summary-delivery-date").value || "";
 
     if (!validateStep2()) return;
     state.orderDraft.step = 3;
@@ -2099,7 +2169,11 @@ function bindGlobalEvents() {
     state.orderDraft.bouquet.note = qs("#order-note").value.trim();
   });
 
-  qs("#payment-slip-input").addEventListener("change", async e => {
+  qs("#summary-delivery-date").addEventListener("change", () => {
+    state.orderDraft.bouquet.deliveryDate = qs("#summary-delivery-date").value || "";
+  });
+
+  qs("#payment-slip-input").addEventListener("change", async (e) => {
     const file = e.target.files?.[0];
 
     if (!file) {
@@ -2163,7 +2237,7 @@ function bindGlobalEvents() {
     }
   });
 
-  qs("#admin-login-form").addEventListener("submit", e => {
+  qs("#admin-login-form").addEventListener("submit", (e) => {
     e.preventDefault();
     const id = qs("#admin-id").value.trim();
     const password = qs("#admin-password").value.trim();
@@ -2185,7 +2259,7 @@ function bindGlobalEvents() {
 
   qs("#save-settings-btn").addEventListener("click", saveSettingsFromAdmin);
 
-  qs("#gallery-upload-input").addEventListener("change", async e => {
+  qs("#gallery-upload-input").addEventListener("change", async (e) => {
     const file = e.target.files?.[0];
     if (!file) {
       state.pendingGalleryUpload = "";
@@ -2202,7 +2276,7 @@ function bindGlobalEvents() {
     }
   });
 
-  qs("#setting-qr-file").addEventListener("change", async e => {
+  qs("#setting-qr-file").addEventListener("change", async (e) => {
     const file = e.target.files?.[0];
     if (!file) {
       state.pendingQrUpload = "";
@@ -2235,11 +2309,12 @@ function bindGlobalEvents() {
 
 function initLoading() {
   const loadingScreen = qs("#loading-screen");
-
   const hideLoadingScreen = () => {
     if (!loadingScreen) return;
     loadingScreen.classList.add("is-hidden");
-    setTimeout(() => loadingScreen.remove(), 500);
+    setTimeout(() => {
+      loadingScreen.remove();
+    }, 500);
   };
 
   window.addEventListener("load", () => {

@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <title>Rose Atelier</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta
+    name="description"
+    content="Rose Atelier - ช่อดอกไม้ประดิษฐ์สไตล์หรูหวาน มินิมอล เรียบหรู พร้อมระบบสั่งซื้อครบวงจร"
+  />
+  <meta name="theme-color" content="#f7f2ef" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@500;600;700;800&family=Italianno&family=Prompt:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="loading-screen" class="loading-screen" aria-hidden="true">
+    <div class="loading-center">
+      <div class="loading-spinner"></div>
+      <div class="loading-brand">Rose Atelier</div>
+      <div class="loading-text">Loading...</div>
+    </div>
+  </div>
+
+  <div id="slip-modal" class="modal hidden" aria-hidden="true">
+    <div class="modal-backdrop" data-close-modal></div>
+    <div class="modal-card modal-card--image" role="dialog" aria-modal="true" aria-label="Slip preview">
+      <button class="modal-close" id="close-slip-modal" type="button" aria-label="ปิดหน้าต่าง">×</button>
+      <img id="slip-modal-image" alt="Slip preview" />
+    </div>
+  </div>
+
+  <div id="toast" class="toast" aria-live="polite" aria-atomic="true"></div>
+
+  <header class="site-header">
+    <div class="shell header-inner">
+      <button class="brand brand--button" id="go-home" type="button">
+        <span class="brand-script">Rose Atelier</span>
+      </button>
+
+      <nav class="nav nav--desktop">
+        <button type="button" class="nav-pill" data-nav-target="gallery">แกลเลอรี่</button>
+        <button type="button" class="nav-pill" data-nav-target="status">ตรวจสอบ</button>
+        <button type="button" class="nav-pill nav-pill--primary" data-nav-target="order">สั่งซื้อ</button>
+        <button type="button" class="nav-pill" data-nav-target="admin-login">Admin</button>
+      </nav>
+
+      <button
+        class="menu-toggle"
+        id="menu-toggle"
+        type="button"
+        aria-expanded="false"
+        aria-controls="mobile-nav"
+        aria-label="เปิดเมนู"
+      >☰</button>
+    </div>
+
+    <div class="mobile-nav hidden" id="mobile-nav">
+      <button type="button" class="mobile-nav__item" data-nav-target="gallery">แกลเลอรี่</button>
+      <button type="button" class="mobile-nav__item" data-nav-target="status">ตรวจสอบ</button>
+      <button type="button" class="mobile-nav__item" data-nav-target="order">สั่งซื้อ</button>
+      <button type="button" class="mobile-nav__item" data-nav-target="admin-login">Admin</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- HOME -->
+    <section id="page-home" class="page-section active">
+      <section class="hero hero--soft">
+        <div class="shell hero-shell hero-shell--center">
+          <div class="hero-content hero-content--center">
+            <h1 class="hero-brand">Rose Atelier</h1>
+            <p class="hero-tagline">ช่อดอกไม้ทุกช่อเล่าเรื่องความรัก</p>
+            <button class="cta-button" id="start-order-home" type="button">เริ่มสั่งซื้อ</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="gallery-preview" id="gallery-section">
+        <div class="shell">
+          <div class="section-heading">
+            <p class="section-kicker">ผลงานของเรา</p>
+            <h2>แกลเลอรี่</h2>
+            <p>รวมภาพช่อดอกไม้เพื่อเป็นไอเดียก่อนสั่งซื้อ</p>
+          </div>
+
+          <div id="gallery-grid" class="gallery-grid"></div>
+        </div>
+      </section>
+
+      <section class="contact-section contact-section--footer-like">
+        <div class="shell contact-shell">
+          <p class="contact-label">ติดต่อเรา</p>
+
+          <div class="contact-socials">
+            <a
+              class="contact-social-btn"
+              href="https://www.tiktok.com/@rose.atelier69?_r=1&_t=ZS-94R8vwmGL10"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="TikTok"
+            >
+              <img
+                src="https://drive.google.com/thumbnail?id=1PESvEIBwPo4UgxYYKtsS5gOMpyI_s4al&sz=w200"
+                alt="TikTok"
+                loading="lazy"
+              />
+              <span>TikTok</span>
+            </a>
+          
+            <a
+              class="contact-social-btn"
+              href="https://www.instagram.com/rose_atelier11?igsh=Mm42MWdmcWJtYjdx&utm_source=qr"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Instagram"
+            >
+              <img
+                src="https://drive.google.com/thumbnail?id=1TZEzCvTuL6400rdYb_f3huC2rKdj4_wA&sz=w200"
+                alt="Instagram"
+                loading="lazy"
+              />
+              <span>Instagram</span>
+            </a>
+          
+            <a
+              class="contact-social-btn"
+              href="https://www.facebook.com/share/17Lm1GYi5h/?mibextid=wwXIfr"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Facebook"
+            >
+              <img
+                src="https://drive.google.com/thumbnail?id=1fs3AMA_8FXs1t89DqK9_IsDHfgUNc980&sz=w200"
+                alt="Facebook"
+                loading="lazy"
+              />
+              <span>Facebook</span>
+            </a>
+          </div>
+
+          <p class="contact-brand">© Rose Atelier</p>
+          <p class="contact-subtext">ช่อดอกไม้ทุกช่อเล่าเรื่องราว</p>
+        </div>
+      </section>
+    </section>
+
+    <!-- ORDER -->
+    <section id="page-order" class="page-section">
+      <div class="shell page-shell">
+        <div class="page-topbar">
+          <button class="back-link" id="back-home-from-order" type="button">← กลับหน้าแรก</button>
+          <span class="page-topbar-brand">Rose Atelier</span>
+        </div>
+
+        <div class="panel wizard-panel">
+          <div class="panel-header">
+            <h2 id="wizard-title">กรอกข้อมูลลูกค้า</h2>
+            <p id="wizard-subtitle">ขั้นตอนที่ 1 จาก 3</p>
+          </div>
+
+          <div class="steps">
+            <div class="step-item active">
+              <div class="step-bubble">1</div>
+              <span>ข้อมูล</span>
+            </div>
+            <div class="step-line"></div>
+            <div class="step-item" id="step-2-indicator">
+              <div class="step-bubble">2</div>
+              <span>เลือกช่อ</span>
+            </div>
+            <div class="step-line"></div>
+            <div class="step-item" id="step-3-indicator">
+              <div class="step-bubble">3</div>
+              <span>ชำระเงิน</span>
+            </div>
+          </div>
+
+          <!-- STEP 1 -->
+          <section id="order-step-1" class="wizard-step active">
+            <form id="customer-form" novalidate>
+              <div class="field-group">
+                <label for="customer-name">ชื่อ - นามสกุล *</label>
+                <input type="text" id="customer-name" placeholder="กรุณากรอกชื่อ - นามสกุล" required />
+              </div>
+
+              <div class="field-group">
+                <label for="customer-phone">เบอร์โทรศัพท์ *</label>
+                <input type="tel" id="customer-phone" placeholder="08xxxxxxxx" required />
+              </div>
+
+              <div class="field-group">
+                <label for="customer-address">ที่อยู่จัดส่ง *</label>
+                <textarea id="customer-address" rows="4" placeholder="กรุณากรอกที่อยู่จัดส่งบ้านเลขที่ หมู่ ถนน ตำบล อำเภอ จังหวัด รหัสไปรษณีย์" required></textarea>
+              </div>
+
+              <div class="info-alert">
+                ✓ ข้อมูลของคุณจะถูกเก็บอย่างปลอดภัย
+              </div>
+
+              <p class="form-error" id="customer-form-error"></p>
+
+              <div class="wizard-actions">
+                <button class="btn btn-outline" id="cancel-order-btn" type="button">ยกเลิก</button>
+                <button class="btn btn-primary" type="submit">ถัดไป</button>
+              </div>
+            </form>
+          </section>
+
+          <!-- STEP 2 -->
+          <section id="order-step-2" class="wizard-step">
+            <div class="builder-layout">
+              <div class="builder-main">
+                <div class="builder-card">
+                  <div class="subheading">
+                    <h3>เลือกจำนวนไม้</h3>
+                    <p>เลือกได้ตั้งแต่ 1 - 100 ดอก</p>
+                  </div>
+
+                  <div class="count-quick-grid" id="count-quick-grid"></div>
+
+                  <div class="field-row field-row--compact">
+                    <div class="field-group">
+                      <label for="custom-count">กรอกจำนวนเอง (1 - 100)</label>
+                      <input type="number" id="custom-count" min="1" max="100" placeholder="เช่น 35" />
+                    </div>
+                    <div class="field-group field-group--button">
+                      <label>&nbsp;</label>
+                      <button class="btn btn-soft" id="apply-custom-count" type="button">ยืนยันจำนวน</button>
+                    </div>
+                  </div>
+
+                  <div class="selected-count-bar">
+                    <span>จำนวนที่เลือก:</span>
+                    <strong id="selected-count-text">0 ดอก</strong>
+                  </div>
+                </div>
+
+                <div class="builder-card">
+                  <div class="subheading">
+                    <h3>รายละเอียดดอกไม้</h3>
+                    <p>เพิ่มรายการดอกและสีได้หลายรายการ แต่จำนวนรวมต้องไม่เกินที่เลือก</p>
+                  </div>
+
+                  <div class="composition-progress">
+                    <span>เลือกสีไปแล้ว</span>
+                    <strong id="composition-progress-text">0 / 0 ดอก</strong>
+                  </div>
+
+                  <div id="composition-list" class="composition-list"></div>
+
+                  <div class="composition-toolbar">
+                    <button class="btn btn-soft" id="add-composition-row" type="button">+ เพิ่มรายการดอก / สี</button>
+                  </div>
+
+                  <p class="helper-text">
+                    เลือกประเภทดอก สี และจำนวนในแต่ละรายการ
+                  </p>
+                </div>
+
+                <div class="builder-card">
+                  <div class="subheading">
+                    <h3>สีช่อ</h3>
+                    <p>เลือกสีช่อหลักของงาน</p>
+                  </div>
+
+                  <div class="bouquet-color-grid" id="bouquet-color-grid"></div>
+                </div>
+
+                <div class="builder-card">
+                  <div class="subheading">
+                    <h3>เพิ่มเติม</h3>
+                    <p>เลือกตัวเลือกเสริมของช่อ</p>
+                  </div>
+
+                  <div class="extras-grid">
+                    <label class="check-card">
+                      <input type="checkbox" id="extra-fluffy" />
+                      <span>ช่อฟู + 50 บาท</span>
+                    </label>
+
+                    <label class="check-card">
+                      <input type="checkbox" id="extra-crown" />
+                      <span>มงกุฏ + 20 บาท</span>
+                    </label>
+
+                    <label class="check-card">
+                      <input type="checkbox" id="extra-pickup" />
+                      <span>นัดรับ (ไม่มีค่าส่ง)</span>
+                    </label>
+                  </div>
+
+                  <div class="field-group">
+                    <label for="order-note">รายละเอียดเพิ่มเติม</label>
+                    <textarea id="order-note" rows="4" placeholder="เช่น ขอช่อแน่น ๆ เน้นหวาน มีริบบิ้น หรือรายละเอียดอื่น ๆ"></textarea>
+                  </div>
+                </div>
+              </div>
+
+              <aside class="builder-summary">
+                <div class="summary-card">
+                  <h3>สรุปรายการ</h3>
+
+                  <div class="summary-list">
+                    <div class="summary-row">
+                      <span>จำนวน</span>
+                      <strong id="summary-count">0 ดอก</strong>
+                    </div>
+                    <div class="summary-row">
+                      <span>ราคาดอกไม้</span>
+                      <strong id="summary-base-price">0 บาท</strong>
+                    </div>
+                    <div class="summary-row">
+                      <span>ประเภท</span>
+                      <strong id="summary-types">-</strong>
+                    </div>
+                    <div class="summary-row">
+                      <span>สีช่อ</span>
+                      <strong id="summary-bouquet-color">-</strong>
+                    </div>
+                  </div>
+
+                  <div class="summary-divider"></div>
+
+                  <div class="summary-mini-list" id="summary-composition-items"></div>
+
+                  <div class="summary-divider"></div>
+
+                  <div class="summary-row">
+                    <span>ช่อฟู</span>
+                    <strong id="summary-extra-fluffy">0 บาท</strong>
+                  </div>
+                  <div class="summary-row">
+                    <span>มงกุฏ</span>
+                    <strong id="summary-extra-crown">0 บาท</strong>
+                  </div>
+                  <div class="summary-row">
+                    <span>ค่าส่ง</span>
+                    <strong id="summary-shipping">0 บาท</strong>
+                  </div>
+                  <p class="shipping-note" id="shipping-note">-</p>
+
+                  <div class="summary-total">
+                    <span>ยอดรวม</span>
+                    <strong id="summary-total-price">0 บาท</strong>
+                  </div>
+                </div>
+
+                <p class="form-error" id="builder-error"></p>
+
+                <div class="wizard-actions wizard-actions--stack">
+                  <button class="btn btn-outline" id="back-to-step-1" type="button">ย้อนกลับ</button>
+                  <button class="btn btn-primary" id="go-to-step-3" type="button">ชำระเงิน</button>
+                </div>
+              </aside>
+            </div>
+          </section>
+
+          <!-- STEP 3 -->
+          <section id="order-step-3" class="wizard-step">
+            <div class="payment-layout">
+              <div class="payment-main">
+                <div class="pay-card">
+                  <div class="subheading">
+                    <h3>ยืนยันคำสั่งซื้อ</h3>
+                    <p>ตรวจสอบรายละเอียดก่อนส่งคำสั่งซื้อ</p>
+                  </div>
+
+                  <div class="success-inline">
+                    ✓ ตรวจสอบออเดอร์เรียบร้อย
+                  </div>
+
+                  <div id="confirmation-summary" class="confirmation-summary"></div>
+
+                  <div class="pay-card__actions">
+                    <button class="btn btn-primary" id="show-payment-section" type="button">ไปหน้าชำระเงิน</button>
+                    <button class="btn btn-outline" id="back-to-step-2" type="button">ยกเลิก</button>
+                  </div>
+                </div>
+
+                <div id="payment-section" class="pay-card hidden">
+                  <div class="subheading">
+                    <h3>ชำระเงิน</h3>
+                    <p>โอนชำระผ่านบัญชีหรือสแกน QR Code</p>
+                  </div>
+
+                  <div class="payment-box">
+                    <div class="payment-qr-wrap">
+                      <img id="payment-qr-image" alt="QR Code PromptPay" />
+                    </div>
+
+                    <div class="payment-bank-info" id="payment-bank-info"></div>
+                  </div>
+
+                  <div class="field-group">
+                    <label>อัปโหลดสลิป *</label>
+                    <div class="upload-zone" id="payment-slip-dropzone">
+                      <input type="file" id="payment-slip-input" accept="image/*" />
+                      <div class="upload-zone__inner">
+                        <div class="upload-icon">📱</div>
+                        <p>คลิกเพื่ออัปโหลดสลิป</p>
+                        <span>หรือลากรูปสลิปมาวางที่นี่</span>
+                        <strong id="payment-slip-name">ยังไม่ได้เลือกไฟล์</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  <p class="form-error" id="payment-error"></p>
+
+                  <button class="btn btn-primary btn-block" id="submit-order-btn" type="button">ส่งคำสั่งซื้อ</button>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </section>
+
+    <!-- SUCCESS -->
+    <section id="page-success" class="page-section">
+      <div class="shell page-shell">
+        <div class="page-topbar">
+          <button class="back-link" id="back-home-from-success" type="button">← กลับหน้าแรก</button>
+          <span class="page-topbar-brand">Rose Atelier</span>
+        </div>
+
+        <div class="panel result-panel">
+          <div class="panel-header">
+            <h2>สั่งซื้อสำเร็จ</h2>
+            <p>ระบบได้รับคำสั่งซื้อของคุณแล้ว</p>
+          </div>
+
+          <div class="order-success-card">
+            <div class="status-chip">รอตรวจสอบสลิป</div>
+            <h3>เลขออเดอร์ของคุณ</h3>
+            <div class="order-id-box">
+              <strong id="success-order-id">-</strong>
+              <button class="btn btn-soft btn-sm" id="copy-order-id" type="button">คัดลอกเลขออเดอร์</button>
+            </div>
+            <p id="success-order-message">โปรดเก็บเลขออเดอร์นี้ไว้สำหรับตรวจสอบสถานะ</p>
+
+            <div class="success-actions">
+              <button class="btn btn-primary" id="go-status-from-success" type="button">ตรวจสอบสถานะ</button>
+              <button class="btn btn-outline" id="go-home-from-success-2" type="button">กลับหน้าแรก</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- STATUS -->
+    <section id="page-status" class="page-section">
+      <div class="shell page-shell">
+        <div class="page-topbar">
+          <button class="back-link" id="back-home-from-status" type="button">← กลับหน้าแรก</button>
+          <span class="page-topbar-brand">Rose Atelier</span>
+        </div>
+
+        <div class="panel status-panel">
+          <div class="panel-header">
+            <h2>ตรวจสอบสถานะ</h2>
+            <p>ค้นหาเลขที่คำสั่งซื้อ</p>
+          </div>
+
+          <div class="status-search-card">
+            <div class="field-group">
+              <label for="status-order-id-input">หมายเลขคำสั่งซื้อ</label>
+              <input type="text" id="status-order-id-input" placeholder="เช่น ORD-001" />
+            </div>
+
+            <button class="btn btn-primary btn-block" id="search-order-status" type="button">ค้นหา</button>
+          </div>
+
+          <div id="status-result" class="status-result hidden"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ADMIN LOGIN -->
+    <section id="page-admin-login" class="page-section">
+      <div class="shell page-shell">
+        <div class="page-topbar">
+          <button class="back-link" id="back-home-from-admin-login" type="button">← กลับหน้าแรก</button>
+          <span class="page-topbar-brand">Rose Atelier</span>
+        </div>
+
+        <div class="panel admin-login-panel">
+          <div class="panel-header">
+            <h2>Admin Login</h2>
+            <p>สำหรับผู้ดูแลระบบเท่านั้น</p>
+          </div>
+
+          <form id="admin-login-form" class="admin-login-form" novalidate>
+            <div class="field-group">
+              <label for="admin-id">ID</label>
+              <input type="text" id="admin-id" placeholder="กรอก ID" />
+            </div>
+
+            <div class="field-group">
+              <label for="admin-password">Password</label>
+              <input type="password" id="admin-password" placeholder="กรอกรหัสผ่าน" />
+            </div>
+
+            <p class="form-error" id="admin-login-error"></p>
+
+            <button class="btn btn-primary btn-block" type="submit">เข้าสู่ระบบ</button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- ADMIN -->
+    <section id="page-admin" class="page-section">
+      <div class="shell admin-shell">
+        <div class="page-topbar">
+          <button class="back-link" id="admin-logout-btn" type="button">← ออกจากระบบ</button>
+          <span class="page-topbar-brand">Rose Atelier Admin</span>
+        </div>
+
+        <div class="admin-dashboard">
+          <div class="admin-kpis admin-kpis--rich">
+            <div class="kpi-card">
+              <span>ยอดขายรวมทั้งหมด</span>
+              <strong id="kpi-total-sales">0 บาท</strong>
+            </div>
+            <div class="kpi-card">
+              <span>จำนวนออเดอร์ทั้งหมด</span>
+              <strong id="kpi-total-orders">0</strong>
+            </div>
+            <div class="kpi-card">
+              <span>รอตรวจสอบสลิป</span>
+              <strong id="kpi-pending-slip">0</strong>
+            </div>
+            <div class="kpi-card">
+              <span>กำลังจัดช่อ</span>
+              <strong id="kpi-arranging">0</strong>
+            </div>
+            <div class="kpi-card">
+              <span>ยอดขายวันนี้</span>
+              <strong id="kpi-sales-daily">0 บาท</strong>
+            </div>
+            <div class="kpi-card">
+              <span>ยอดขายเดือนนี้</span>
+              <strong id="kpi-sales-monthly">0 บาท</strong>
+            </div>
+            <div class="kpi-card">
+              <span>ยอดขายปีนี้</span>
+              <strong id="kpi-sales-yearly">0 บาท</strong>
+            </div>
+            <div class="kpi-card">
+              <span>กำไรสุทธิรวม</span>
+              <strong id="kpi-net-profit">0 บาท</strong>
+            </div>
+          </div>
+
+          <div class="admin-section">
+            <div class="admin-section__header">
+              <div>
+                <h3>ตั้งค่าระบบ</h3>
+                <p>แก้ไขราคา สี ค่าส่ง ข้อมูลชำระเงิน และแกลเลอรี่</p>
+              </div>
+            </div>
+
+            <div class="settings-grid">
+              <div class="settings-card">
+                <h4>การชำระเงิน</h4>
+                <div class="field-group">
+                  <label for="setting-bank-name">ธนาคาร</label>
+                  <input type="text" id="setting-bank-name" />
+                </div>
+                <div class="field-group">
+                  <label for="setting-account-name">ชื่อบัญชี</label>
+                  <input type="text" id="setting-account-name" />
+                </div>
+                <div class="field-group">
+                  <label for="setting-account-number">เลขบัญชี</label>
+                  <input type="text" id="setting-account-number" />
+                </div>
+                <div class="field-group">
+                  <label for="setting-qr-file">อัปโหลด QR Code</label>
+                  <input type="file" id="setting-qr-file" accept="image/*" />
+                </div>
+                <p class="helper-text">ถ้าไม่อัปโหลดใหม่ ระบบจะใช้ QR เดิม</p>
+              </div>
+
+              <div class="settings-card">
+                <h4>ค่าราคา / ตัวเลือก</h4>
+                <div class="field-group">
+                  <label for="setting-fluffy-price">ช่อฟู</label>
+                  <input type="number" id="setting-fluffy-price" />
+                </div>
+                <div class="field-group">
+                  <label for="setting-crown-price">มงกุฏ</label>
+                  <input type="number" id="setting-crown-price" />
+                </div>
+                <div class="field-group">
+                  <label for="setting-flower-colors">สีดอกไม้ (คั่นด้วย ,)</label>
+                  <textarea id="setting-flower-colors" rows="4"></textarea>
+                </div>
+                <div class="field-group">
+                  <label for="setting-bouquet-colors">สีช่อ (คั่นด้วย ,)</label>
+                  <textarea id="setting-bouquet-colors" rows="3"></textarea>
+                </div>
+              </div>
+
+              <div class="settings-card">
+                <h4>ค่าส่ง</h4>
+                <div class="field-group">
+                  <label for="setting-shipping-1-10">1-10 ดอก</label>
+                  <input type="number" id="setting-shipping-1-10" />
+                </div>
+                <div class="field-group">
+                  <label for="setting-shipping-11-19">11-19 ดอก</label>
+                  <input type="number" id="setting-shipping-11-19" />
+                </div>
+                <div class="field-group">
+                  <label for="setting-shipping-20-30">20-30 ดอก</label>
+                  <input type="number" id="setting-shipping-20-30" />
+                </div>
+                <div class="field-group">
+                  <label for="setting-shipping-31-40">31-40 ดอก</label>
+                  <input type="number" id="setting-shipping-31-40" />
+                </div>
+                <div class="field-group">
+                  <label for="setting-shipping-41-50">41-50 ดอก</label>
+                  <input type="number" id="setting-shipping-41-50" />
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-footer">
+              <button class="btn btn-primary" id="save-settings-btn" type="button">บันทึกการตั้งค่า</button>
+            </div>
+          </div>
+
+          <div class="admin-section">
+            <div class="admin-section__header">
+              <div>
+                <h3>จัดการแกลเลอรี่</h3>
+                <p>เพิ่มรูปผลงานสำหรับโชว์ลูกค้า</p>
+              </div>
+            </div>
+
+            <div class="gallery-admin">
+              <div class="field-group">
+                <label>อัปโหลดรูปผลงาน</label>
+                <input type="file" id="gallery-upload-input" accept="image/*" />
+              </div>
+
+              <button class="btn btn-soft" id="add-gallery-image-btn" type="button">เพิ่มรูปเข้าระบบ</button>
+
+              <div id="admin-gallery-grid" class="admin-gallery-grid"></div>
+            </div>
+          </div>
+
+          <div class="admin-section">
+            <div class="admin-section__header">
+              <div>
+                <h3>สรุปยอดขาย</h3>
+                <p>ภาพรวมรายวัน รายเดือน รายปี พร้อมต้นทุนและกำไร</p>
+              </div>
+            </div>
+
+            <div class="sales-report-grid">
+              <div class="report-card">
+                <h4>รายวัน</h4>
+                <div class="report-list">
+                  <div class="report-row"><span>ยอดขาย</span><strong id="report-daily-sales">0 บาท</strong></div>
+                  <div class="report-row"><span>ต้นทุน</span><strong id="report-daily-cost">0 บาท</strong></div>
+                  <div class="report-row"><span>กำไร</span><strong id="report-daily-profit">0 บาท</strong></div>
+                </div>
+              </div>
+
+              <div class="report-card">
+                <h4>รายเดือน</h4>
+                <div class="report-list">
+                  <div class="report-row"><span>ยอดขาย</span><strong id="report-monthly-sales">0 บาท</strong></div>
+                  <div class="report-row"><span>ต้นทุน</span><strong id="report-monthly-cost">0 บาท</strong></div>
+                  <div class="report-row"><span>กำไร</span><strong id="report-monthly-profit">0 บาท</strong></div>
+                </div>
+              </div>
+
+              <div class="report-card">
+                <h4>รายปี</h4>
+                <div class="report-list">
+                  <div class="report-row"><span>ยอดขาย</span><strong id="report-yearly-sales">0 บาท</strong></div>
+                  <div class="report-row"><span>ต้นทุน</span><strong id="report-yearly-cost">0 บาท</strong></div>
+                  <div class="report-row"><span>กำไร</span><strong id="report-yearly-profit">0 บาท</strong></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="admin-section">
+            <div class="admin-section__header">
+              <div>
+                <h3>ต้นทุน</h3>
+                <p>เพิ่ม ลบ แก้ไขต้นทุน เพื่อคำนวณกำไรสุทธิของร้าน</p>
+              </div>
+            </div>
+
+            <div class="costs-layout">
+              <div class="settings-card">
+                <h4>เพิ่มต้นทุน</h4>
+
+                <div class="field-group">
+                  <label for="cost-name">ชื่อรายการต้นทุน</label>
+                  <input type="text" id="cost-name" placeholder="เช่น ซื้อดอกกุหลาบรอบใหม่" />
+                </div>
+
+                <div class="field-group">
+                  <label for="cost-amount">จำนวนเงิน</label>
+                  <input type="number" id="cost-amount" placeholder="เช่น 500" />
+                </div>
+
+                <div class="field-group">
+                  <label for="cost-date">วันที่ซื้อ</label>
+                  <input type="date" id="cost-date" />
+                </div>
+
+                <div class="field-group">
+                  <label for="cost-note">หมายเหตุ</label>
+                  <textarea id="cost-note" rows="3" placeholder="เช่น ซื้อวัตถุดิบ / ค่ากล่อง / ค่าริบบิ้น"></textarea>
+                </div>
+
+                <button class="btn btn-primary" id="add-cost-btn" type="button">เพิ่มต้นทุน</button>
+              </div>
+
+              <div class="settings-card">
+                <h4>รายการต้นทุน</h4>
+                <div class="table-wrap">
+                  <table class="admin-table admin-table--costs">
+                    <thead>
+                      <tr>
+                        <th>ชื่อรายการ</th>
+                        <th>จำนวนเงิน</th>
+                        <th>วันที่ซื้อ</th>
+                        <th>หมายเหตุ</th>
+                        <th>จัดการ</th>
+                      </tr>
+                    </thead>
+                    <tbody id="admin-costs-body"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="admin-section">
+            <div class="admin-section__header">
+              <div>
+                <h3>คำสั่งซื้อที่เข้า</h3>
+                <p>จัดการสถานะ ดูสลิป แก้ไข เพิ่ม ลบ และอัปเดตเลขพัสดุ</p>
+              </div>
+            </div>
+
+            <div class="table-wrap">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>ชื่อ</th>
+                    <th>เบอร์</th>
+                    <th>จำนวน</th>
+                    <th>ประเภท</th>
+                    <th>สีดอก</th>
+                    <th>สีช่อ</th>
+                    <th>ยอด</th>
+                    <th>สถานะ</th>
+                    <th>เลขพัสดุ</th>
+                    <th>สลิป</th>
+                    <th>หมายเหตุ</th>
+                    <th>จัดการ</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-orders-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>

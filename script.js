@@ -9,16 +9,19 @@ const STORAGE_KEYS = {
   adminLoggedIn: "roseAtelierAdminLoggedInV3"
 };
 
-const FLOWER_TYPES = [
+const DEFAULT_ROSE_FLOWER_TYPES = [
   "กุหลาบ ไม่ใส่กลิตเตอร์",
-  "ทานตะวัน",
-  "เดซี่",
-  "ไฮเดรนเยีย",
-  "ลิลลี่",
   "กุหลาบ กลิตเตอร์"
 ];
 
-const DEFAULT_FLOWER_COLORS = [
+const DEFAULT_VELVET_FLOWER_TYPES = [
+  "ทานตะวัน",
+  "เดซี่",
+  "ลิลลี่",
+  "ไฮเดรนเยีย"
+];
+
+const DEFAULT_ROSE_FLOWER_COLORS = [
   "ชมพูกะปิ",
   "น้ำเงิน",
   "แดง",
@@ -30,6 +33,19 @@ const DEFAULT_FLOWER_COLORS = [
   "เบจ",
   "แชมเปญ",
   "เขียวมิ้นต์"
+];
+
+const DEFAULT_VELVET_FLOWER_COLORS = [
+  "แดง",
+  "แดงแตงโม",
+  "แดงไวน์",
+  "เหลือง",
+  "ทอง",
+  "ชมพูอ่อน",
+  "ม่วงอ่อน",
+  "ขาว",
+  "ฟ้า",
+  "น้ำเงิน"
 ];
 
 const DEFAULT_BOUQUET_COLORS = [
@@ -51,7 +67,7 @@ const ORDER_STATUSES = [
   "จัดส่งแล้ว(ไปรษณี)"
 ];
 
-const PRICE_MAP_1_TO_40 = {
+const DEFAULT_ROSE_PRICE_MAP = {
   1: 69, 2: 99, 3: 129, 4: 159, 5: 189,
   6: 219, 7: 249, 8: 279, 9: 309, 10: 339,
   11: 369, 12: 389, 13: 409, 14: 419, 15: 439,
@@ -60,6 +76,19 @@ const PRICE_MAP_1_TO_40 = {
   26: 659, 27: 679, 28: 699, 29: 719, 30: 739,
   31: 759, 32: 779, 33: 799, 34: 819, 35: 839,
   36: 859, 37: 879, 38: 899, 39: 919, 40: 939
+};
+
+const DEFAULT_VELVET_PRICE_ANCHORS = {
+  10: 59,
+  15: 69,
+  20: 129,
+  25: 139,
+  30: 149,
+  35: 159,
+  40: 179,
+  45: 199,
+  50: 250,
+  60: 299
 };
 
 const DEFAULT_QR = "https://promptpay.io/0628894582.png";
@@ -73,6 +102,17 @@ const DEFAULT_GALLERY = [
 
 const BANNED_WORDS = [
   "เหี้ย", "ห่า", "สัส", "สัตว์", "เชี่ย", "ควย", "หี", "เย็ด", "แม่ง", "fuck", "shit", "bitch"
+];
+
+const CHART_COLORS = [
+  "#d98f87",
+  "#cfa36b",
+  "#c76868",
+  "#8e77b7",
+  "#67a7d9",
+  "#83b58a",
+  "#e3a5a5",
+  "#b5a3da"
 ];
 
 const state = {
@@ -105,8 +145,13 @@ function createDefaultAppData() {
         accountNumber: "062-8-89458-2",
         qrUrl: DEFAULT_QR
       },
-      flowerColors: [...DEFAULT_FLOWER_COLORS],
-      bouquetColors: [...DEFAULT_BOUQUET_COLORS]
+      bouquetColors: [...DEFAULT_BOUQUET_COLORS],
+      roseFlowerTypes: [...DEFAULT_ROSE_FLOWER_TYPES],
+      velvetFlowerTypes: [...DEFAULT_VELVET_FLOWER_TYPES],
+      roseFlowerColors: [...DEFAULT_ROSE_FLOWER_COLORS],
+      velvetFlowerColors: [...DEFAULT_VELVET_FLOWER_COLORS],
+      rosePriceMap: { ...DEFAULT_ROSE_PRICE_MAP },
+      velvetPriceAnchors: { ...DEFAULT_VELVET_PRICE_ANCHORS }
     },
     gallery: DEFAULT_GALLERY.map((url, index) => ({
       id: `default-gallery-${index + 1}`,
@@ -136,6 +181,28 @@ function loadCache() {
   }
 }
 
+function sanitizeNumberMap(map, fallback = {}) {
+  const source = map && typeof map === "object" ? map : fallback;
+  const result = {};
+
+  Object.entries(source).forEach(([key, value]) => {
+    const k = Number(key);
+    const v = Number(value);
+    if (Number.isFinite(k) && k > 0 && Number.isFinite(v) && v >= 0) {
+      result[k] = Math.round(v);
+    }
+  });
+
+  if (!Object.keys(result).length) return { ...fallback };
+  return result;
+}
+
+function sanitizeStringArray(arr, fallback = []) {
+  if (!Array.isArray(arr)) return [...fallback];
+  const result = arr.map(item => String(item || "").trim()).filter(Boolean);
+  return result.length ? result : [...fallback];
+}
+
 function mergeAppData(data = {}) {
   const defaults = createDefaultAppData();
 
@@ -153,12 +220,13 @@ function mergeAppData(data = {}) {
         ...defaults.settings.payment,
         ...(data.settings?.payment || {})
       },
-      flowerColors: Array.isArray(data.settings?.flowerColors) && data.settings.flowerColors.length
-        ? data.settings.flowerColors
-        : [...defaults.settings.flowerColors],
-      bouquetColors: Array.isArray(data.settings?.bouquetColors) && data.settings.bouquetColors.length
-        ? data.settings.bouquetColors
-        : [...defaults.settings.bouquetColors]
+      bouquetColors: sanitizeStringArray(data.settings?.bouquetColors, defaults.settings.bouquetColors),
+      roseFlowerTypes: sanitizeStringArray(data.settings?.roseFlowerTypes, defaults.settings.roseFlowerTypes),
+      velvetFlowerTypes: sanitizeStringArray(data.settings?.velvetFlowerTypes, defaults.settings.velvetFlowerTypes),
+      roseFlowerColors: sanitizeStringArray(data.settings?.roseFlowerColors, defaults.settings.roseFlowerColors),
+      velvetFlowerColors: sanitizeStringArray(data.settings?.velvetFlowerColors, defaults.settings.velvetFlowerColors),
+      rosePriceMap: sanitizeNumberMap(data.settings?.rosePriceMap, defaults.settings.rosePriceMap),
+      velvetPriceAnchors: sanitizeNumberMap(data.settings?.velvetPriceAnchors, defaults.settings.velvetPriceAnchors)
     },
     gallery: Array.isArray(data.gallery) ? data.gallery : [...defaults.gallery],
     orders: Array.isArray(data.orders) ? data.orders : [],
@@ -260,10 +328,109 @@ function matchesYear(dateValue) {
   return getYearKey(dateValue) === getYearKey(new Date());
 }
 
-function getFlowerBasePrice(count) {
-  const safeCount = Math.max(1, Math.min(100, Number(count || 0)));
-  if (safeCount <= 40) return PRICE_MAP_1_TO_40[safeCount];
-  return PRICE_MAP_1_TO_40[40] + (safeCount - 40) * 20;
+function getRoseFlowerTypes() {
+  return sanitizeStringArray(state.app?.settings?.roseFlowerTypes, DEFAULT_ROSE_FLOWER_TYPES);
+}
+
+function getVelvetFlowerTypes() {
+  return sanitizeStringArray(state.app?.settings?.velvetFlowerTypes, DEFAULT_VELVET_FLOWER_TYPES);
+}
+
+function getAllFlowerTypes() {
+  return [...getRoseFlowerTypes(), ...getVelvetFlowerTypes()];
+}
+
+function isRoseType(type) {
+  return getRoseFlowerTypes().includes(type);
+}
+
+function isVelvetType(type) {
+  return getVelvetFlowerTypes().includes(type);
+}
+
+function getFlowerCategoryLabel(type) {
+  if (isRoseType(type)) return "ดอกไม้ริบบิ้น";
+  if (isVelvetType(type)) return "ดอกไม้กำมะหยี่";
+  return "-";
+}
+
+function getFlowerColorsByType(type) {
+  if (isRoseType(type)) {
+    return sanitizeStringArray(state.app?.settings?.roseFlowerColors, DEFAULT_ROSE_FLOWER_COLORS);
+  }
+  if (isVelvetType(type)) {
+    return sanitizeStringArray(state.app?.settings?.velvetFlowerColors, DEFAULT_VELVET_FLOWER_COLORS);
+  }
+  return [];
+}
+
+function getSortedNumericEntries(obj) {
+  return Object.entries(obj || {})
+    .map(([key, value]) => [Number(key), Number(value)])
+    .filter(([k, v]) => Number.isFinite(k) && k > 0 && Number.isFinite(v) && v >= 0)
+    .sort((a, b) => a[0] - b[0]);
+}
+
+function getInterpolatedPrice(count, mapObject, fallback = 0) {
+  const qty = Math.max(1, Math.min(100, Number(count || 0)));
+  const entries = getSortedNumericEntries(mapObject);
+
+  if (!entries.length) return fallback;
+
+  const exact = entries.find(([k]) => k === qty);
+  if (exact) return Math.round(exact[1]);
+
+  if (entries.length === 1) return Math.round(entries[0][1]);
+
+  if (qty < entries[0][0]) {
+    const [x1, y1] = entries[0];
+    const [x2, y2] = entries[1];
+    const slope = (y2 - y1) / (x2 - x1 || 1);
+    return Math.max(0, Math.round(y1 + (qty - x1) * slope));
+  }
+
+  for (let i = 0; i < entries.length - 1; i += 1) {
+    const [x1, y1] = entries[i];
+    const [x2, y2] = entries[i + 1];
+    if (qty > x1 && qty < x2) {
+      const ratio = (qty - x1) / (x2 - x1);
+      return Math.max(0, Math.round(y1 + (y2 - y1) * ratio));
+    }
+  }
+
+  const [x1, y1] = entries[entries.length - 2];
+  const [x2, y2] = entries[entries.length - 1];
+  const slope = (y2 - y1) / (x2 - x1 || 1);
+  return Math.max(0, Math.round(y2 + (qty - x2) * slope));
+}
+
+function getRosePrice(count) {
+  const qty = Math.max(1, Math.min(100, Number(count || 0)));
+  const roseMap = sanitizeNumberMap(state.app?.settings?.rosePriceMap, DEFAULT_ROSE_PRICE_MAP);
+
+  if (roseMap[qty] !== undefined) return Number(roseMap[qty]);
+
+  const maxDefined = Math.max(...Object.keys(roseMap).map(Number));
+  if (qty > maxDefined) {
+    const base = Number(roseMap[maxDefined] || 0);
+    return base + (qty - maxDefined) * 20;
+  }
+
+  return getInterpolatedPrice(qty, roseMap, 0);
+}
+
+function getVelvetPrice(count) {
+  const qty = Math.max(1, Math.min(100, Number(count || 0)));
+  const anchors = sanitizeNumberMap(state.app?.settings?.velvetPriceAnchors, DEFAULT_VELVET_PRICE_ANCHORS);
+  return getInterpolatedPrice(qty, anchors, 0);
+}
+
+function getFlowerTypePrice(type, count) {
+  const qty = Number(count || 0);
+  if (!type || qty <= 0) return 0;
+  if (isRoseType(type)) return getRosePrice(qty);
+  if (isVelvetType(type)) return getVelvetPrice(qty);
+  return 0;
 }
 
 function getShippingInfo(count, isPickup) {
@@ -304,13 +471,19 @@ function getCompositionTotal() {
 }
 
 function getSelectedTypesText() {
-  const uniqueTypes = [...new Set(state.orderDraft.bouquet.compositions.map(item => item.type).filter(Boolean))];
+  const uniqueTypes = [...new Set(
+    state.orderDraft.bouquet.compositions.map(item => item.type).filter(Boolean)
+  )];
   return uniqueTypes.length ? uniqueTypes.join(", ") : "-";
 }
 
 function calculateDraftSummary() {
   const count = Number(state.orderDraft.bouquet.count || 0);
-  const basePrice = count ? getFlowerBasePrice(count) : 0;
+  const validPriceRows = state.orderDraft.bouquet.compositions.filter(
+    item => item.type && Number(item.qty) > 0
+  );
+
+  const basePrice = validPriceRows.reduce((sum, item) => sum + getFlowerTypePrice(item.type, item.qty), 0);
   const fluffyPrice = state.orderDraft.bouquet.extras.fluffy ? Number(state.app.settings.fluffyPrice || 0) : 0;
   const crownPrice = state.orderDraft.bouquet.extras.crown ? Number(state.app.settings.crownPrice || 0) : 0;
   const shippingInfo = getShippingInfo(count, state.orderDraft.bouquet.extras.pickup);
@@ -387,28 +560,18 @@ function showToast(message) {
   toast.textContent = message;
   toast.classList.add("show");
 
-  if (state.toastTimer) {
-    clearTimeout(state.toastTimer);
-  }
-
-  state.toastTimer = setTimeout(() => {
-    toast.classList.remove("show");
-  }, 2400);
+  if (state.toastTimer) clearTimeout(state.toastTimer);
+  state.toastTimer = setTimeout(() => toast.classList.remove("show"), 2400);
 }
 
 function setBusy(status) {
   state.loadingRequest = !!status;
   const submitBtn = qs("#submit-order-btn");
-  if (submitBtn) {
-    submitBtn.disabled = !!status;
-  }
+  if (submitBtn) submitBtn.disabled = !!status;
 }
 
 function normalizeOrder(serverOrder) {
-  const compositions = Array.isArray(serverOrder.compositions)
-    ? serverOrder.compositions
-    : [];
-
+  const compositions = Array.isArray(serverOrder.compositions) ? serverOrder.compositions : [];
   const extras = {
     fluffy: !!serverOrder.extras?.fluffy,
     crown: !!serverOrder.extras?.crown,
@@ -420,6 +583,7 @@ function normalizeOrder(serverOrder) {
     createdAt: serverOrder.createdAt || "",
     status: serverOrder.orderStatus || serverOrder.status || "รอตรวจสอบสลิป",
     trackingNumber: serverOrder.trackingNumber || "",
+    adminNote: serverOrder.adminNote || "",
     customer: {
       name: serverOrder.customerName || "",
       phone: serverOrder.phone || "",
@@ -482,12 +646,13 @@ function normalizeSettings(serverSettings = {}) {
       ...defaults.payment,
       ...(serverSettings.payment || {})
     },
-    flowerColors: Array.isArray(serverSettings.flowerColors) && serverSettings.flowerColors.length
-      ? serverSettings.flowerColors
-      : [...defaults.flowerColors],
-    bouquetColors: Array.isArray(serverSettings.bouquetColors) && serverSettings.bouquetColors.length
-      ? serverSettings.bouquetColors
-      : [...defaults.bouquetColors]
+    bouquetColors: sanitizeStringArray(serverSettings.bouquetColors, defaults.bouquetColors),
+    roseFlowerTypes: sanitizeStringArray(serverSettings.roseFlowerTypes, defaults.roseFlowerTypes),
+    velvetFlowerTypes: sanitizeStringArray(serverSettings.velvetFlowerTypes, defaults.velvetFlowerTypes),
+    roseFlowerColors: sanitizeStringArray(serverSettings.roseFlowerColors, defaults.roseFlowerColors),
+    velvetFlowerColors: sanitizeStringArray(serverSettings.velvetFlowerColors, defaults.velvetFlowerColors),
+    rosePriceMap: sanitizeNumberMap(serverSettings.rosePriceMap, defaults.rosePriceMap),
+    velvetPriceAnchors: sanitizeNumberMap(serverSettings.velvetPriceAnchors, defaults.velvetPriceAnchors)
   };
 }
 
@@ -522,9 +687,7 @@ function setPage(pageId) {
     section.classList.toggle("active", section.id === pageId);
   });
 
-  if (pageId === "page-home") {
-    renderGallery();
-  }
+  if (pageId === "page-home") renderGallery();
 
   if (pageId === "page-admin") {
     if (!isAdminLoggedIn()) {
@@ -561,12 +724,8 @@ function closeMobileNav() {
 function toggleMobileNav() {
   const nav = qs("#mobile-nav");
   if (!nav) return;
-
-  if (nav.classList.contains("hidden")) {
-    openMobileNav();
-  } else {
-    closeMobileNav();
-  }
+  if (nav.classList.contains("hidden")) openMobileNav();
+  else closeMobileNav();
 }
 
 function navigateToSection(target) {
@@ -652,9 +811,7 @@ function renderOrderForm() {
   qs("#selected-count-text").textContent = `${state.orderDraft.bouquet.count || 0} ดอก`;
   qs("#composition-progress-text").textContent = `${getCompositionTotal()} / ${state.orderDraft.bouquet.count || 0} ดอก`;
 
-  if (state.orderDraft.step !== 3) {
-    qs("#payment-section").classList.add("hidden");
-  }
+  if (state.orderDraft.step !== 3) qs("#payment-section").classList.add("hidden");
 }
 
 function renderQuickCounts() {
@@ -703,16 +860,23 @@ function renderCompositionRows() {
     return;
   }
 
+  const allTypes = getAllFlowerTypes();
+
   state.orderDraft.bouquet.compositions.forEach((row, index) => {
     const item = document.createElement("div");
     item.className = "composition-row";
+
+    const rowColors = getFlowerColorsByType(row.type);
+    const rowPrice = row.type && Number(row.qty) > 0 ? getFlowerTypePrice(row.type, row.qty) : 0;
+    const categoryText = row.type ? getFlowerCategoryLabel(row.type) : "ยังไม่ได้เลือกประเภทดอก";
+
     item.innerHTML = `
       <div class="composition-row__grid">
         <div class="field-group">
           <label>ประเภทดอก</label>
           <select data-field="type">
             <option value="">เลือกประเภทดอก</option>
-            ${FLOWER_TYPES.map(type => `<option value="${type}" ${row.type === type ? "selected" : ""}>${type}</option>`).join("")}
+            ${allTypes.map(type => `<option value="${type}" ${row.type === type ? "selected" : ""}>${type}</option>`).join("")}
           </select>
         </div>
 
@@ -720,7 +884,7 @@ function renderCompositionRows() {
           <label>สี</label>
           <select data-field="color" ${!row.type ? "disabled" : ""}>
             <option value="">เลือกสี</option>
-            ${state.app.settings.flowerColors.map(color => `<option value="${color}" ${row.color === color ? "selected" : ""}>${color}</option>`).join("")}
+            ${rowColors.map(color => `<option value="${color}" ${row.color === color ? "selected" : ""}>${color}</option>`).join("")}
           </select>
         </div>
 
@@ -731,6 +895,11 @@ function renderCompositionRows() {
 
         <button type="button" class="composition-row__remove">ลบ</button>
       </div>
+
+      <div class="composition-row__meta">
+        <div class="composition-row__category">${categoryText}</div>
+        <div class="composition-row__price">${rowPrice > 0 ? `ราคาแถวนี้ ${formatBaht(rowPrice)}` : "เลือกราคาเมื่อเลือกประเภทดอกและจำนวน"}</div>
+      </div>
     `;
 
     const typeEl = item.querySelector('select[data-field="type"]');
@@ -738,19 +907,25 @@ function renderCompositionRows() {
     const qtyEl = item.querySelector('input[data-field="qty"]');
     const removeEl = item.querySelector(".composition-row__remove");
 
-    typeEl.addEventListener("change", (e) => {
-      state.orderDraft.bouquet.compositions[index].type = e.target.value;
-      if (!e.target.value) state.orderDraft.bouquet.compositions[index].color = "";
+    typeEl.addEventListener("change", e => {
+      const selectedType = e.target.value;
+      const validColors = getFlowerColorsByType(selectedType);
+      state.orderDraft.bouquet.compositions[index].type = selectedType;
+
+      if (!validColors.includes(state.orderDraft.bouquet.compositions[index].color)) {
+        state.orderDraft.bouquet.compositions[index].color = "";
+      }
+
       renderCompositionRows();
       renderBuilderSummary();
     });
 
-    colorEl.addEventListener("change", (e) => {
+    colorEl.addEventListener("change", e => {
       state.orderDraft.bouquet.compositions[index].color = e.target.value;
       renderBuilderSummary();
     });
 
-    qtyEl.addEventListener("input", (e) => {
+    qtyEl.addEventListener("input", e => {
       const totalAllowed = Number(state.orderDraft.bouquet.count || 0);
       const currentRows = state.orderDraft.bouquet.compositions;
       const otherRowsTotal = currentRows.reduce((sum, itemRow, idx) => {
@@ -769,6 +944,7 @@ function renderCompositionRows() {
       state.orderDraft.bouquet.compositions[index].qty = newQty;
       e.target.value = newQty;
 
+      renderCompositionRows();
       renderBuilderSummary();
       qs("#composition-progress-text").textContent = `${getCompositionTotal()} / ${state.orderDraft.bouquet.count || 0} ดอก`;
     });
@@ -808,7 +984,7 @@ function renderBuilderSummary() {
     compositions.forEach(item => {
       const row = document.createElement("div");
       row.className = "summary-mini-item";
-      row.innerHTML = `<span>${item.type} / ${item.color}</span><strong>${item.qty} ดอก</strong>`;
+      row.innerHTML = `<span>${item.type} / ${item.color}</span><strong>${item.qty} ดอก (${formatBaht(getFlowerTypePrice(item.type, item.qty))})</strong>`;
       miniList.appendChild(row);
     });
   }
@@ -833,7 +1009,7 @@ function renderStep3Summary() {
       <div class="confirmation-row"><span>ประเภท</span><strong>${getSelectedTypesText()}</strong></div>
       <div class="confirmation-row"><span>สีช่อ</span><strong>${state.orderDraft.bouquet.bouquetColor || "-"}</strong></div>
       <div class="confirmation-row"><span>รายละเอียดเพิ่มเติม</span><strong>${state.orderDraft.bouquet.note || "-"}</strong></div>
-      ${compositions.map(item => `<div class="confirmation-row"><span>${item.type} / ${item.color}</span><strong>${item.qty} ดอก</strong></div>`).join("")}
+      ${compositions.map(item => `<div class="confirmation-row"><span>${item.type} / ${item.color}</span><strong>${item.qty} ดอก (${formatBaht(getFlowerTypePrice(item.type, item.qty))})</strong></div>`).join("")}
     </div>
 
     <div class="confirmation-block">
@@ -946,6 +1122,15 @@ function validateStep2() {
 
 function buildOrderPayload() {
   const summary = calculateDraftSummary();
+  const validCompositions = state.orderDraft.bouquet.compositions
+    .filter(item => item.type && item.color && Number(item.qty) > 0)
+    .map(item => ({
+      type: sanitizeText(item.type),
+      color: sanitizeText(item.color),
+      qty: Number(item.qty),
+      rowPrice: getFlowerTypePrice(item.type, item.qty),
+      category: getFlowerCategoryLabel(item.type)
+    }));
 
   return {
     customerName: sanitizeText(state.orderDraft.customer.name),
@@ -956,10 +1141,7 @@ function buildOrderPayload() {
     comment: sanitizeText(state.orderDraft.bouquet.note || ""),
     flowerType: sanitizeText(getSelectedTypesText()),
     flowerColor: sanitizeText(
-      state.orderDraft.bouquet.compositions
-        .filter(item => item.type && item.color && Number(item.qty) > 0)
-        .map(item => `${item.color}(${item.qty})`)
-        .join(", ")
+      validCompositions.map(item => `${item.color}(${item.qty})`).join(", ")
     ),
     totalPrice: summary.total,
     basePrice: summary.basePrice,
@@ -976,13 +1158,7 @@ function buildOrderPayload() {
       crown: !!state.orderDraft.bouquet.extras.crown,
       pickup: !!state.orderDraft.bouquet.extras.pickup
     },
-    compositions: state.orderDraft.bouquet.compositions
-      .filter(item => item.type && item.color && Number(item.qty) > 0)
-      .map(item => ({
-        type: sanitizeText(item.type),
-        color: sanitizeText(item.color),
-        qty: Number(item.qty)
-      }))
+    compositions: validCompositions
   };
 }
 
@@ -1006,13 +1182,8 @@ async function submitOrder() {
     const order = state.app.orders.find(item => item.id === result.orderId);
     state.lastCreatedOrderId = result.orderId;
 
-    if (order) {
-      showSuccessPage(order);
-    } else {
-      showSuccessPage({
-        id: result.orderId
-      });
-    }
+    if (order) showSuccessPage(order);
+    else showSuccessPage({ id: result.orderId });
 
     renderAdminDashboard();
     showToast("ส่งคำสั่งซื้อเรียบร้อยแล้ว");
@@ -1036,10 +1207,7 @@ function renderGallery() {
   wrap.innerHTML = "";
 
   const galleryItems = [...(state.app.gallery || [])]
-    .filter(item => {
-      if (typeof item === "string") return true;
-      return String(item.isActive).toUpperCase() !== "FALSE";
-    })
+    .filter(item => typeof item === "string" || String(item.isActive).toUpperCase() !== "FALSE")
     .sort((a, b) => {
       const aOrder = typeof a === "string" ? 0 : Number(a.sortOrder || 0);
       const bOrder = typeof b === "string" ? 0 : Number(b.sortOrder || 0);
@@ -1062,7 +1230,6 @@ function renderGallery() {
       <img src="${src}" alt="${safeAlt}" loading="lazy" />
       ${title ? `<figcaption>${title}</figcaption>` : ""}
     `;
-
     wrap.appendChild(card);
   });
 }
@@ -1130,29 +1297,13 @@ function getSalesCostProfitSummary() {
   const totalSales = orders.reduce((sum, order) => sum + Number(order.pricing?.total || 0), 0);
   const totalCosts = costs.reduce((sum, item) => sum + Number(item.amount || 0), 0);
 
-  const dailySales = orders
-    .filter(order => matchesToday(order.createdAt))
-    .reduce((sum, order) => sum + Number(order.pricing?.total || 0), 0);
+  const dailySales = orders.filter(order => matchesToday(order.createdAt)).reduce((sum, order) => sum + Number(order.pricing?.total || 0), 0);
+  const monthlySales = orders.filter(order => matchesMonth(order.createdAt)).reduce((sum, order) => sum + Number(order.pricing?.total || 0), 0);
+  const yearlySales = orders.filter(order => matchesYear(order.createdAt)).reduce((sum, order) => sum + Number(order.pricing?.total || 0), 0);
 
-  const monthlySales = orders
-    .filter(order => matchesMonth(order.createdAt))
-    .reduce((sum, order) => sum + Number(order.pricing?.total || 0), 0);
-
-  const yearlySales = orders
-    .filter(order => matchesYear(order.createdAt))
-    .reduce((sum, order) => sum + Number(order.pricing?.total || 0), 0);
-
-  const dailyCost = costs
-    .filter(item => matchesToday(item.date))
-    .reduce((sum, item) => sum + Number(item.amount || 0), 0);
-
-  const monthlyCost = costs
-    .filter(item => matchesMonth(item.date))
-    .reduce((sum, item) => sum + Number(item.amount || 0), 0);
-
-  const yearlyCost = costs
-    .filter(item => matchesYear(item.date))
-    .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const dailyCost = costs.filter(item => matchesToday(item.date)).reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const monthlyCost = costs.filter(item => matchesMonth(item.date)).reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const yearlyCost = costs.filter(item => matchesYear(item.date)).reduce((sum, item) => sum + Number(item.amount || 0), 0);
 
   return {
     totalSales,
@@ -1199,15 +1350,57 @@ function renderAdminKpis() {
   qs("#report-yearly-profit").textContent = formatBaht(report.yearlyProfit);
 }
 
+function formatMapToLines(map) {
+  return getSortedNumericEntries(map)
+    .map(([key, value]) => `${key}=${value}`)
+    .join("\n");
+}
+
+function parseListTextarea(value) {
+  return String(value || "")
+    .split(",")
+    .map(item => sanitizeText(item.trim()))
+    .filter(Boolean);
+}
+
+function parseNumberMapTextarea(value, fallback = {}) {
+  const lines = String(value || "")
+    .split("\n")
+    .map(line => line.trim())
+    .filter(Boolean);
+
+  const result = {};
+  lines.forEach(line => {
+    const normalized = line.replace(/\s+/g, "");
+    const [left, right] = normalized.split("=");
+    const key = Number(left);
+    const val = Number(right);
+    if (Number.isFinite(key) && key > 0 && Number.isFinite(val) && val >= 0) {
+      result[key] = Math.round(val);
+    }
+  });
+
+  return Object.keys(result).length ? result : { ...fallback };
+}
+
 function renderAdminSettings() {
   const settings = state.app.settings;
+
   qs("#setting-bank-name").value = settings.payment.bankName;
   qs("#setting-account-name").value = settings.payment.accountName;
   qs("#setting-account-number").value = settings.payment.accountNumber;
   qs("#setting-fluffy-price").value = settings.fluffyPrice;
   qs("#setting-crown-price").value = settings.crownPrice;
-  qs("#setting-flower-colors").value = settings.flowerColors.join(", ");
   qs("#setting-bouquet-colors").value = settings.bouquetColors.join(", ");
+
+  qs("#setting-rose-flower-types").value = settings.roseFlowerTypes.join(", ");
+  qs("#setting-velvet-flower-types").value = settings.velvetFlowerTypes.join(", ");
+  qs("#setting-rose-flower-colors").value = settings.roseFlowerColors.join(", ");
+  qs("#setting-velvet-flower-colors").value = settings.velvetFlowerColors.join(", ");
+
+  qs("#setting-rose-price-map").value = formatMapToLines(settings.rosePriceMap);
+  qs("#setting-velvet-price-anchors").value = formatMapToLines(settings.velvetPriceAnchors);
+
   qs("#setting-shipping-1-10").value = settings.shipping.range1to10;
   qs("#setting-shipping-11-19").value = settings.shipping.range11to19;
   qs("#setting-shipping-20-30").value = settings.shipping.range20to30;
@@ -1227,9 +1420,7 @@ function renderAdminGallery() {
     return;
   }
 
-  const sortedGallery = [...state.app.gallery].sort((a, b) => {
-    return Number(a.sortOrder || 0) - Number(b.sortOrder || 0);
-  });
+  const sortedGallery = [...state.app.gallery].sort((a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0));
 
   sortedGallery.forEach((item, index) => {
     const src = item.imageUrl || "";
@@ -1274,16 +1465,16 @@ function renderAdminCosts() {
     return;
   }
 
-  state.app.costs.forEach((cost) => {
+  state.app.costs.forEach(cost => {
     const tr = document.createElement("tr");
     tr.className = "cost-edit-row";
 
     tr.innerHTML = `
-      <td><input type="text" value="${cost.name || ""}" class="cost-name-input" /></td>
-      <td><input type="number" value="${cost.amount || 0}" class="cost-amount-input" /></td>
-      <td><input type="date" value="${cost.date || ""}" class="cost-date-input" /></td>
-      <td><textarea rows="2" class="cost-note-input">${cost.note || ""}</textarea></td>
-      <td>
+      <td data-label="ชื่อรายการ"><input type="text" value="${cost.name || ""}" class="cost-name-input" /></td>
+      <td data-label="จำนวนเงิน"><input type="number" value="${cost.amount || 0}" class="cost-amount-input" /></td>
+      <td data-label="วันที่ซื้อ"><input type="date" value="${cost.date || ""}" class="cost-date-input" /></td>
+      <td data-label="หมายเหตุ"><textarea rows="2" class="cost-note-input">${cost.note || ""}</textarea></td>
+      <td data-label="จัดการ">
         <div class="inline-action-group">
           <button type="button" class="inline-btn inline-btn--save">บันทึก</button>
           <button type="button" class="inline-btn inline-btn--delete">ลบ</button>
@@ -1365,53 +1556,62 @@ async function addCostItem() {
   }
 }
 
-function getOrderTypesDisplay(order) {
-  return [...new Set(order.bouquet.compositions.map(item => item.type))].join(", ");
-}
-
-function getOrderFlowerColorsDisplay(order) {
-  return order.bouquet.compositions.map(item => `${item.color}(${item.qty})`).join(", ");
-}
-
 function renderAdminOrders() {
   const tbody = qs("#admin-orders-body");
+  if (!tbody) return;
   tbody.innerHTML = "";
 
   if (!state.app.orders.length) {
-    tbody.innerHTML = `<tr><td colspan="13"><div class="empty-state">ยังไม่มีคำสั่งซื้อ</div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="14"><div class="empty-state">ยังไม่มีคำสั่งซื้อ</div></td></tr>`;
     return;
   }
 
-  state.app.orders.forEach((order) => {
+  state.app.orders.forEach(order => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${order.id}</td>
-      <td>${order.customer.name}</td>
-      <td>${order.customer.phone}</td>
-      <td>${order.bouquet.count}</td>
-      <td>${getOrderTypesDisplay(order)}</td>
-      <td>${getOrderFlowerColorsDisplay(order)}</td>
-      <td>${order.bouquet.bouquetColor}</td>
-      <td>${formatBaht(order.pricing.total)}</td>
-      <td>
+      <td data-label="ID">${order.id}</td>
+      <td data-label="ชื่อ">${order.customer.name}</td>
+      <td data-label="เบอร์">${order.customer.phone}</td>
+      <td data-label="จำนวน">${order.bouquet.count}</td>
+      <td data-label="ประเภท">
+        <div class="order-cell-list">
+          ${order.bouquet.compositions.length
+            ? order.bouquet.compositions.map(item => `<div class="order-cell-list__item">${item.type || "-"}</div>`).join("")
+            : `<div class="order-cell-list__item">-</div>`
+          }
+        </div>
+      </td>
+      <td data-label="สีดอก">
+        <div class="order-cell-list">
+          ${order.bouquet.compositions.length
+            ? order.bouquet.compositions.map(item => `<div class="order-cell-list__item">${item.color || "-"} (${item.qty || 0})</div>`).join("")
+            : `<div class="order-cell-list__item">-</div>`
+          }
+        </div>
+      </td>
+      <td data-label="สีช่อ">${order.bouquet.bouquetColor || "-"}</td>
+      <td data-label="ยอด">${formatBaht(order.pricing.total)}</td>
+      <td data-label="สถานะ">
         <select class="admin-status-select">
           ${ORDER_STATUSES.map(status => `<option value="${status}" ${order.status === status ? "selected" : ""}>${status}</option>`).join("")}
         </select>
       </td>
-      <td>
+      <td data-label="เลขพัสดุ">
         <input class="admin-tracking-input" type="text" value="${order.trackingNumber || ""}" placeholder="กรอกเลขแท็ค" ${order.status !== "จัดส่งแล้ว(ไปรษณี)" ? "disabled" : ""} />
       </td>
-      <td>
-        ${
-          order.payment.slipImage
-            ? `<button class="slip-thumb-btn" type="button">ดูสลิป</button>`
-            : `<span>-</span>`
-        }
+      <td data-label="สลิป">
+        ${order.payment.slipImage ? `<button class="slip-thumb-btn" type="button">ดูสลิป</button>` : `<span>-</span>`}
       </td>
-      <td>
-        <textarea class="admin-note-input" rows="3">${order.bouquet.note || ""}</textarea>
+      <td data-label="หมายเหตุลูกค้า">
+        <div class="admin-note-preview">${order.bouquet.note || "-"}</div>
       </td>
-      <td>
+      <td data-label="หมายเหตุแอดมิน">
+        <div class="admin-note-block">
+          <textarea class="admin-note-input" rows="3">${order.adminNote || ""}</textarea>
+          <p class="mini-note">หมายเหตุนี้จะส่งกลับลูกค้าเมื่อมีการแจ้งสถานะทาง LINE ถ้ามี lineId</p>
+        </div>
+      </td>
+      <td data-label="จัดการ">
         <div class="admin-action-stack">
           <button class="save-row-btn" type="button">บันทึก</button>
           <button class="delete-row-btn" type="button">ลบ</button>
@@ -1421,7 +1621,7 @@ function renderAdminOrders() {
 
     const statusSelect = tr.querySelector(".admin-status-select");
     const trackingInput = tr.querySelector(".admin-tracking-input");
-    const noteInput = tr.querySelector(".admin-note-input");
+    const adminNoteInput = tr.querySelector(".admin-note-input");
     const saveBtn = tr.querySelector(".save-row-btn");
     const deleteBtn = tr.querySelector(".delete-row-btn");
     const slipBtn = tr.querySelector(".slip-thumb-btn");
@@ -1437,7 +1637,7 @@ function renderAdminOrders() {
           orderId: order.id,
           orderStatus: statusSelect.value,
           trackingNumber: statusSelect.value === "จัดส่งแล้ว(ไปรษณี)" ? trackingInput.value.trim() : "",
-          comment: sanitizeText(noteInput.value.trim())
+          adminNote: sanitizeText(adminNoteInput.value.trim())
         });
 
         await syncAppFromServer(false);
@@ -1470,6 +1670,117 @@ function renderAdminOrders() {
   });
 }
 
+function renderDonutChart(containerSelector, legendSelector, title, items) {
+  const chartEl = qs(containerSelector);
+  const legendEl = qs(legendSelector);
+  if (!chartEl || !legendEl) return;
+
+  const total = items.reduce((sum, item) => sum + Number(item.value || 0), 0);
+
+  if (!total) {
+    chartEl.style.background = "conic-gradient(#f0e8e5 0deg 360deg)";
+    chartEl.innerHTML = `<div class="donut-chart__center"><strong>0</strong><span>${title}</span></div>`;
+    legendEl.innerHTML = `<div class="empty-state">ยังไม่มีข้อมูล</div>`;
+    return;
+  }
+
+  let current = 0;
+  const segments = items.map((item, index) => {
+    const value = Number(item.value || 0);
+    const angle = (value / total) * 360;
+    const start = current;
+    const end = current + angle;
+    current = end;
+    return `${item.color || CHART_COLORS[index % CHART_COLORS.length]} ${start}deg ${end}deg`;
+  });
+
+  chartEl.style.background = `conic-gradient(${segments.join(", ")})`;
+  chartEl.innerHTML = `<div class="donut-chart__center"><strong>${total}</strong><span>${title}</span></div>`;
+
+  legendEl.innerHTML = items.map((item, index) => `
+    <div class="chart-legend__item">
+      <span class="chart-legend__dot" style="background:${item.color || CHART_COLORS[index % CHART_COLORS.length]}"></span>
+      <span>${item.label}</span>
+      <strong>${Number(item.value || 0).toLocaleString("th-TH")}</strong>
+    </div>
+  `).join("");
+}
+
+function renderBarChart(containerSelector, items, formatter = v => String(v)) {
+  const container = qs(containerSelector);
+  if (!container) return;
+
+  const safeItems = items.filter(item => Number(item.value || 0) > 0).slice(0, 8);
+
+  if (!safeItems.length) {
+    container.innerHTML = `<div class="empty-state">ยังไม่มีข้อมูล</div>`;
+    return;
+  }
+
+  const maxValue = Math.max(...safeItems.map(item => Number(item.value || 0)), 1);
+
+  container.innerHTML = safeItems.map(item => {
+    const percent = Math.max(4, Math.round((Number(item.value || 0) / maxValue) * 100));
+    return `
+      <div class="bar-chart__item">
+        <div class="bar-chart__head">
+          <span class="bar-chart__label">${item.label}</span>
+          <span class="bar-chart__value">${formatter(item.value)}</span>
+        </div>
+        <div class="bar-chart__track">
+          <div class="bar-chart__fill" style="width:${percent}%"></div>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderAdminCharts() {
+  const orders = state.app.orders || [];
+  const report = getSalesCostProfitSummary();
+
+  const statusMap = ORDER_STATUSES.reduce((acc, status) => {
+    acc[status] = 0;
+    return acc;
+  }, {});
+
+  orders.forEach(order => {
+    statusMap[order.status] = (statusMap[order.status] || 0) + 1;
+  });
+
+  const statusItems = Object.entries(statusMap)
+    .map(([label, value], index) => ({
+      label,
+      value,
+      color: CHART_COLORS[index % CHART_COLORS.length]
+    }))
+    .filter(item => item.value > 0);
+
+  renderDonutChart("#status-donut-chart", "#status-chart-legend", "ออเดอร์", statusItems);
+
+  const flowerTypeCountMap = {};
+  orders.forEach(order => {
+    order.bouquet.compositions.forEach(item => {
+      const type = item.type || "-";
+      flowerTypeCountMap[type] = (flowerTypeCountMap[type] || 0) + Number(item.qty || 0);
+    });
+  });
+
+  const flowerTypeItems = Object.entries(flowerTypeCountMap)
+    .map(([label, value]) => ({ label, value }))
+    .sort((a, b) => b.value - a.value);
+
+  renderBarChart("#flower-type-bars", flowerTypeItems, value => `${Number(value).toLocaleString("th-TH")} ดอก`);
+
+  const salesItems = [
+    { label: "วันนี้", value: report.dailySales },
+    { label: "เดือนนี้", value: report.monthlySales },
+    { label: "ปีนี้", value: report.yearlySales }
+  ];
+
+  renderBarChart("#sales-compare-bars", salesItems, value => formatBaht(value));
+}
+
 function renderAdminDashboard() {
   if (!isAdminLoggedIn()) return;
   renderAdminKpis();
@@ -1477,6 +1788,7 @@ function renderAdminDashboard() {
   renderAdminGallery();
   renderAdminCosts();
   renderAdminOrders();
+  renderAdminCharts();
 }
 
 function openSlipModal(src) {
@@ -1510,14 +1822,13 @@ async function saveSettingsFromAdmin() {
       accountNumber: qs("#setting-account-number").value.trim(),
       qrUrl: state.pendingQrUpload || state.app.settings.payment.qrUrl || DEFAULT_QR
     },
-    flowerColors: qs("#setting-flower-colors").value
-      .split(",")
-      .map(item => sanitizeText(item.trim()))
-      .filter(Boolean),
-    bouquetColors: qs("#setting-bouquet-colors").value
-      .split(",")
-      .map(item => sanitizeText(item.trim()))
-      .filter(Boolean)
+    bouquetColors: parseListTextarea(qs("#setting-bouquet-colors").value),
+    roseFlowerTypes: parseListTextarea(qs("#setting-rose-flower-types").value),
+    velvetFlowerTypes: parseListTextarea(qs("#setting-velvet-flower-types").value),
+    roseFlowerColors: parseListTextarea(qs("#setting-rose-flower-colors").value),
+    velvetFlowerColors: parseListTextarea(qs("#setting-velvet-flower-colors").value),
+    rosePriceMap: parseNumberMapTextarea(qs("#setting-rose-price-map").value, DEFAULT_ROSE_PRICE_MAP),
+    velvetPriceAnchors: parseNumberMapTextarea(qs("#setting-velvet-price-anchors").value, DEFAULT_VELVET_PRICE_ANCHORS)
   };
 
   try {
@@ -1567,13 +1878,8 @@ function readFileAsDataURL(file) {
 }
 
 async function validateImageFileToDataUrl(file) {
-  if (!file) {
-    throw new Error("ไม่พบไฟล์รูป");
-  }
-
-  if (!file.type.startsWith("image/")) {
-    throw new Error("รองรับเฉพาะไฟล์รูปภาพ");
-  }
+  if (!file) throw new Error("ไม่พบไฟล์รูป");
+  if (!file.type.startsWith("image/")) throw new Error("รองรับเฉพาะไฟล์รูปภาพ");
 
   const dataUrl = await readFileAsDataURL(file);
 
@@ -1594,7 +1900,7 @@ function setupSlipDropzone() {
   if (!dropzone || !input) return;
 
   ["dragenter", "dragover"].forEach(eventName => {
-    dropzone.addEventListener(eventName, (e) => {
+    dropzone.addEventListener(eventName, e => {
       e.preventDefault();
       e.stopPropagation();
       dropzone.classList.add("is-dragover");
@@ -1602,14 +1908,14 @@ function setupSlipDropzone() {
   });
 
   ["dragleave", "drop"].forEach(eventName => {
-    dropzone.addEventListener(eventName, (e) => {
+    dropzone.addEventListener(eventName, e => {
       e.preventDefault();
       e.stopPropagation();
       dropzone.classList.remove("is-dragover");
     });
   });
 
-  dropzone.addEventListener("drop", async (e) => {
+  dropzone.addEventListener("drop", async e => {
     const file = e.dataTransfer?.files?.[0];
     if (!file) return;
 
@@ -1632,19 +1938,17 @@ function setupSlipDropzone() {
 
 function bindResponsiveHelpers() {
   window.addEventListener("resize", () => {
-    if (window.innerWidth > 860) {
-      closeMobileNav();
-    }
+    if (window.innerWidth > 860) closeMobileNav();
   });
 
-  document.addEventListener("keydown", (e) => {
+  document.addEventListener("keydown", e => {
     if (e.key === "Escape") {
       closeMobileNav();
       closeSlipModal();
     }
   });
 
-  document.addEventListener("click", (e) => {
+  document.addEventListener("click", e => {
     const header = qs(".site-header");
     const nav = qs("#mobile-nav");
     const toggle = qs("#menu-toggle");
@@ -1653,9 +1957,7 @@ function bindResponsiveHelpers() {
     if (nav.classList.contains("hidden")) return;
 
     const isInsideHeader = header.contains(e.target);
-    if (!isInsideHeader) {
-      closeMobileNav();
-    }
+    if (!isInsideHeader) closeMobileNav();
   });
 }
 
@@ -1676,7 +1978,7 @@ function bindGlobalEvents() {
   qs("#back-home-from-status").addEventListener("click", () => setPage("page-home"));
   qs("#back-home-from-admin-login").addEventListener("click", () => setPage("page-home"));
 
-  qs("#customer-form").addEventListener("submit", (e) => {
+  qs("#customer-form").addEventListener("submit", e => {
     e.preventDefault();
     if (!validateStep1()) return;
     state.orderDraft.step = 2;
@@ -1750,7 +2052,7 @@ function bindGlobalEvents() {
     state.orderDraft.bouquet.note = qs("#order-note").value.trim();
   });
 
-  qs("#payment-slip-input").addEventListener("change", async (e) => {
+  qs("#payment-slip-input").addEventListener("change", async e => {
     const file = e.target.files?.[0];
 
     if (!file) {
@@ -1814,7 +2116,7 @@ function bindGlobalEvents() {
     }
   });
 
-  qs("#admin-login-form").addEventListener("submit", (e) => {
+  qs("#admin-login-form").addEventListener("submit", e => {
     e.preventDefault();
     const id = qs("#admin-id").value.trim();
     const password = qs("#admin-password").value.trim();
@@ -1836,7 +2138,7 @@ function bindGlobalEvents() {
 
   qs("#save-settings-btn").addEventListener("click", saveSettingsFromAdmin);
 
-  qs("#gallery-upload-input").addEventListener("change", async (e) => {
+  qs("#gallery-upload-input").addEventListener("change", async e => {
     const file = e.target.files?.[0];
     if (!file) {
       state.pendingGalleryUpload = "";
@@ -1853,7 +2155,7 @@ function bindGlobalEvents() {
     }
   });
 
-  qs("#setting-qr-file").addEventListener("change", async (e) => {
+  qs("#setting-qr-file").addEventListener("change", async e => {
     const file = e.target.files?.[0];
     if (!file) {
       state.pendingQrUpload = "";
@@ -1886,12 +2188,11 @@ function bindGlobalEvents() {
 
 function initLoading() {
   const loadingScreen = qs("#loading-screen");
+
   const hideLoadingScreen = () => {
     if (!loadingScreen) return;
     loadingScreen.classList.add("is-hidden");
-    setTimeout(() => {
-      loadingScreen.remove();
-    }, 500);
+    setTimeout(() => loadingScreen.remove(), 500);
   };
 
   window.addEventListener("load", () => {
